@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Тренажёр слепой печати</title>
+<style>
+  :root {
+    --bg: #1a1b26;
+    --panel: #24283b;
+    --panel-2: #2a2e44;
+    --text: #c0caf5;
+    --dim: #565f89;
+    --correct: #9ece6a;
+    --wrong: #f7768e;
+    --cursor: #e0af68;
+    --accent: #7aa2f7;
+    --lp: #f7768e; --lr: #ff9e64; --lm: #e0af68; --li: #9ece6a;
+    --ri: #73daca; --rm: #7aa2f7; --rr: #bb9af7; --rp: #ff9e9e;
+    --tt: #c0caf5;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 20px; overflow-x: hidden;
+  }
+  .app { width: 100%; max-width: 920px; position: relative; }
+
+  /* Header: Level + XP + Score */
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px; gap: 16px; flex-wrap: wrap;
+  }
+  .level-info { display: flex; align-items: center; gap: 12px; }
+  .level-badge {
+    background: linear-gradient(135deg, var(--accent), var(--lr));
+    color: var(--bg); font-weight: 700;
+    border-radius: 50%; width: 48px; height: 48px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 0 24px rgba(122,162,247,0.4);
+    flex-shrink: 0;
+  }
+  .level-meta { display: flex; flex-direction: column; gap: 3px; min-width: 180px; }
+  .level-title { font-size: 14px; font-weight: 500; }
+  .xp-bar {
+    width: 200px; height: 6px;
+    background: var(--panel-2); border-radius: 3px; overflow: hidden;
+  }
+  .xp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--li), var(--accent));
+    transition: width 0.5s ease;
+  }
+  .xp-text { font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
+  .score-box { text-align: right; }
+  .score-label {
+    font-size: 11px; color: var(--dim);
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .score-display {
+    font-size: 32px; font-weight: 700;
+    color: var(--cursor);
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 16px rgba(224,175,104,0.4);
+    line-height: 1.1;
+  }
+
+  .stats { display: flex; gap: 24px; margin-bottom: 16px; font-size: 14px; flex-wrap: wrap; }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat-label {
+    color: var(--dim); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .stat-value {
+    color: var(--accent); font-size: 20px; font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-value.streak { color: var(--dim); }
+  .stat-value.streak.on { color: var(--li); }
+  .stat-value.streak.hot {
+    color: var(--lp); text-shadow: 0 0 12px var(--lp);
+    animation: pulseHot 0.5s ease-in-out infinite alternate;
+  }
+  @keyframes pulseHot {
+    from { transform: scale(1); }
+    to { transform: scale(1.06); }
+  }
+
+  .text-display {
+    background: var(--panel);
+    border-radius: 8px; padding: 24px;
+    font-family: "SF Mono", Menlo, Monaco, monospace;
+    font-size: 22px; line-height: 1.7; letter-spacing: 0.5px;
+    user-select: none; cursor: text; min-height: 110px;
+    position: relative; outline: none; margin-bottom: 16px;
+  }
+  .text-display.blurred::after {
+    content: "Кликни сюда и начинай печатать";
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(26,27,38,0.85); color: var(--dim);
+    border-radius: 8px; font-size: 16px; font-family: inherit;
+  }
+  .char { color: var(--dim); transition: color 0.05s; }
+  .char.correct { color: var(--text); }
+  .char.wrong { color: var(--wrong); background: rgba(247,118,142,0.18); }
+  .char.current { background: var(--cursor); color: var(--bg); border-radius: 2px; }
+
+  /* Hands */
+  .hands-wrap {
+    background: var(--panel); border-radius: 8px;
+    padding: 18px 12px 14px; margin-bottom: 14px;
+  }
+  .hint-line {
+    text-align: center; color: var(--dim);
+    font-size: 13px; margin-bottom: 10px;
+    font-family: "SF Mono", monospace; min-height: 18px;
+  }
+  .hint-line b { color: var(--cursor); font-weight: 500; }
+  .hands {
+    display: flex; justify-content: center; align-items: flex-end;
+    gap: 14px; font-family: "SF Mono", Menlo, monospace;
+  }
+  .hand { display: flex; gap: 6px; align-items: flex-end; }
+  .finger {
+    display: flex; flex-direction: column; align-items: center;
+    color: var(--dim); transition: all 0.1s; width: 38px;
+  }
+  .finger .shaft {
+    font-size: 20px; line-height: 0.9;
+    white-space: pre; text-align: center; color: inherit;
+  }
+  .finger.f-lp { --c: var(--lp); }
+  .finger.f-lr { --c: var(--lr); }
+  .finger.f-lm { --c: var(--lm); }
+  .finger.f-li { --c: var(--li); }
+  .finger.f-ri { --c: var(--ri); }
+  .finger.f-rm { --c: var(--rm); }
+  .finger.f-rr { --c: var(--rr); }
+  .finger.f-rp { --c: var(--rp); }
+  .finger .tip { font-size: 18px; line-height: 1; color: inherit; }
+  .finger .home {
+    margin-top: 4px; font-size: 12px;
+    padding: 2px 6px; border-radius: 3px;
+    background: rgba(255,255,255,0.04); color: var(--dim);
+    min-width: 22px; text-align: center;
+  }
+  .finger .name {
+    margin-top: 4px; font-size: 10px; color: var(--dim);
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .finger.active { color: var(--c); }
+  .finger.active .shaft { text-shadow: 0 0 8px var(--c); }
+  .finger.active .home {
+    color: var(--bg); background: var(--c); font-weight: 600;
+  }
+  .finger.active .name { color: var(--c); }
+  .thumb-area {
+    display: flex; flex-direction: column; align-items: center; margin: 0 4px;
+  }
+  .thumb-bar {
+    width: 110px; height: 14px; border-radius: 7px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: all 0.1s;
+  }
+  .thumb-bar.active {
+    background: var(--tt); box-shadow: 0 0 12px var(--tt);
+  }
+  .thumb-label {
+    font-size: 10px; color: var(--dim);
+    text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;
+  }
+
+  /* Keyboard */
+  .keyboard {
+    display: flex; flex-direction: column;
+    gap: 4px; margin-top: 14px; align-items: center;
+  }
+  .kb-row { display: flex; gap: 4px; }
+  .key {
+    width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 4px;
+    font-family: "SF Mono", monospace; font-size: 13px;
+    background: var(--panel-2); color: var(--dim);
+    border: 1px solid transparent;
+    transition: background 0.1s, color 0.1s, border-color 0.1s;
+    position: relative;
+  }
+  .key.wide { width: 220px; }
+  .key.lp { background: rgba(247,118,142,0.12); color: var(--lp); }
+  .key.lr { background: rgba(255,158,100,0.12); color: var(--lr); }
+  .key.lm { background: rgba(224,175,104,0.12); color: var(--lm); }
+  .key.li { background: rgba(158,206,106,0.12); color: var(--li); }
+  .key.ri { background: rgba(115,218,202,0.12); color: var(--ri); }
+  .key.rm { background: rgba(122,162,247,0.12); color: var(--rm); }
+  .key.rr { background: rgba(187,154,247,0.12); color: var(--rr); }
+  .key.rp { background: rgba(255,158,158,0.12); color: var(--rp); }
+  .key.tt { background: rgba(192,202,245,0.08); color: var(--text); }
+  .key.next {
+    transform: scale(1.15);
+    color: var(--bg) !important; font-weight: 700;
+    box-shadow: 0 0 12px currentColor;
+  }
+  .key.next.lp { background: var(--lp); }
+  .key.next.lr { background: var(--lr); }
+  .key.next.lm { background: var(--lm); }
+  .key.next.li { background: var(--li); }
+  .key.next.ri { background: var(--ri); }
+  .key.next.rm { background: var(--rm); }
+  .key.next.rr { background: var(--rr); }
+  .key.next.rp { background: var(--rp); }
+  .key.next.tt { background: var(--tt); }
+
+  /* HIT effects */
+  .key.correct-hit {
+    animation: correctHit 0.45s ease-out;
+  }
+  @keyframes correctHit {
+    0%   { transform: scale(1); }
+    30%  {
+      transform: scale(1.55);
+      background: var(--correct) !important;
+      color: var(--bg) !important;
+      box-shadow: 0 0 30px var(--correct), 0 0 60px var(--correct);
+    }
+    100% { transform: scale(1.15); }
+  }
+  .key.wrong-hit {
+    animation: wrongHit 0.45s ease-out;
+  }
+  @keyframes wrongHit {
+    0%, 100% { transform: translateX(0); }
+    15% { transform: translateX(-6px); background: var(--wrong) !important; color: var(--bg) !important; }
+    30% { transform: translateX(6px); }
+    45% { transform: translateX(-5px); }
+    60% { transform: translateX(5px); }
+    75% { transform: translateX(-3px); }
+  }
+  .key.combo-hit {
+    animation: comboHit 0.6s ease-out;
+  }
+  @keyframes comboHit {
+    0%   { transform: scale(1); }
+    25%  {
+      transform: scale(1.7) rotate(-8deg);
+      background: var(--cursor) !important;
+      color: var(--bg) !important;
+      box-shadow: 0 0 40px var(--cursor), 0 0 80px var(--lr);
+    }
+    50%  { transform: scale(1.4) rotate(6deg); }
+    100% { transform: scale(1.15) rotate(0); }
+  }
+
+  /* particles */
+  .particle {
+    position: fixed; pointer-events: none;
+    font-size: 14px; font-weight: 700;
+    animation: floatUp 0.9s ease-out forwards;
+    z-index: 90; transform: translate(-50%, 0);
+  }
+  @keyframes floatUp {
+    0%   { transform: translate(-50%, 0) scale(0.4); opacity: 0; }
+    20%  { transform: translate(-50%, -10px) scale(1.3); opacity: 1; }
+    100% { transform: translate(-50%, -70px) scale(1); opacity: 0; }
+  }
+  .spark {
+    position: fixed; pointer-events: none;
+    width: 6px; height: 6px; border-radius: 50%;
+    z-index: 90;
+  }
+
+  /* gifts */
+  .gift {
+    position: fixed; font-size: 56px;
+    pointer-events: none; z-index: 100;
+    bottom: -80px;
+    animation: giftFly 2.4s cubic-bezier(.4,0,.6,1) forwards;
+    filter: drop-shadow(0 0 16px rgba(224,175,104,0.6));
+  }
+  @keyframes giftFly {
+    0%   { transform: translateY(0) scale(0.4) rotate(0deg); opacity: 0; }
+    15%  { opacity: 1; }
+    50%  { transform: translateY(-60vh) scale(1.2) rotate(360deg); opacity: 1; }
+    100% { transform: translateY(-120vh) scale(0.8) rotate(720deg); opacity: 0; }
+  }
+
+  /* level up */
+  .flash {
+    position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(circle, rgba(255,255,255,0.5), transparent 60%);
+    animation: flashAnim 0.8s ease-out forwards; z-index: 140;
+  }
+  @keyframes flashAnim { from { opacity: 1; } to { opacity: 0; } }
+
+  .level-up-banner {
+    position: fixed; top: 30%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, var(--accent), var(--cursor));
+    color: var(--bg); padding: 28px 56px;
+    border-radius: 16px; font-size: 28px; font-weight: 700;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 80px rgba(224,175,104,0.5);
+    animation: levelUpBanner 2.4s ease-out forwards;
+    z-index: 150; text-align: center;
+  }
+  @keyframes levelUpBanner {
+    0%   { transform: translate(-50%, -50%) scale(0) rotate(-10deg); opacity: 0; }
+    15%  { transform: translate(-50%, -50%) scale(1.2) rotate(2deg); opacity: 1; }
+    25%  { transform: translate(-50%, -50%) scale(1) rotate(0); }
+    85%  { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(0.7); opacity: 0; }
+  }
+
+  /* toast */
+  .toast {
+    position: fixed; top: 20px; right: 20px;
+    background: var(--panel);
+    border-left: 4px solid var(--cursor);
+    padding: 14px 18px; border-radius: 6px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+    animation: toastIn 0.4s ease-out, toastOut 0.4s ease-in 3.6s forwards;
+    z-index: 200; min-width: 280px;
+  }
+  @keyframes toastIn  { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes toastOut { to { transform: translateX(110%); opacity: 0; } }
+  .toast-title {
+    font-size: 11px; color: var(--dim);
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;
+  }
+  .toast-content { display: flex; align-items: center; gap: 12px; }
+  .toast-icon { font-size: 32px; }
+  .toast-name { font-weight: 600; font-size: 14px; }
+  .toast-desc { font-size: 12px; color: var(--dim); }
+
+  /* achievements */
+  .ach-panel {
+    margin-top: 16px; background: var(--panel);
+    border-radius: 8px; padding: 14px 16px;
+  }
+  .ach-panel h2 {
+    font-size: 12px; font-weight: 500; color: var(--dim);
+    text-transform: uppercase; letter-spacing: 1px;
+    margin: 0 0 12px; display: flex; justify-content: space-between;
+  }
+  .ach-panel h2 span { color: var(--cursor); }
+  .ach-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    gap: 8px;
+  }
+  .ach-cell {
+    aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--panel-2); border-radius: 6px;
+    font-size: 26px; position: relative; cursor: help;
+    opacity: 0.3; filter: grayscale(1); transition: all 0.3s;
+  }
+  .ach-cell.unlocked {
+    opacity: 1; filter: none;
+    background: linear-gradient(135deg, rgba(224,175,104,0.18), rgba(122,162,247,0.18));
+    box-shadow: 0 0 12px rgba(224,175,104,0.25);
+  }
+  .ach-cell:hover { transform: scale(1.15); z-index: 5; }
+  .ach-cell .ach-tip {
+    position: absolute; bottom: calc(100% + 6px); left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg); border: 1px solid var(--accent);
+    padding: 8px 12px; border-radius: 4px;
+    white-space: nowrap; font-size: 11px;
+    pointer-events: none; opacity: 0;
+    transition: opacity 0.2s; z-index: 10; line-height: 1.4;
+  }
+  .ach-cell:hover .ach-tip { opacity: 1; }
+  .ach-cell .ach-tip b { color: var(--cursor); }
+
+  .controls { display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+  button, select {
+    background: var(--panel); color: var(--text);
+    border: 1px solid transparent; border-radius: 6px;
+    padding: 9px 16px; font-size: 14px; cursor: pointer;
+    font-family: inherit; transition: all 0.15s;
+  }
+  button:hover, select:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: var(--bg); font-weight: 500; }
+  button.ghost { background: transparent; color: var(--dim); }
+  button.ghost:hover { color: var(--wrong); border-color: var(--wrong); }
+  .footnote { color: var(--dim); font-size: 12px; margin-top: 12px; }
+  kbd {
+    background: var(--panel); padding: 2px 6px; border-radius: 3px;
+    font-family: "SF Mono", monospace; font-size: 11px;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="level-info">
+      <div class="level-badge" id="level-num">1</div>
+      <div class="level-meta">
+        <div class="level-title" id="level-title">Новичок</div>
+        <div class="xp-bar"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+        <div class="xp-text" id="xp-text">0 / 100 XP</div>
+      </div>
+    </div>
+    <div class="score-box">
+      <div class="score-label">Очки</div>
+      <div class="score-display" id="score">0</div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><span class="stat-label">Скорость</span><span class="stat-value" id="wpm">0</span></div>
+    <div class="stat"><span class="stat-label">Точность</span><span class="stat-value" id="accuracy">100%</span></div>
+    <div class="stat"><span class="stat-label">Серия</span><span class="stat-value streak" id="streak">—</span></div>
+    <div class="stat"><span class="stat-label">Время</span><span class="stat-value" id="time">0s</span></div>
+    <div class="stat"><span class="stat-label">Ошибки</span><span class="stat-value" id="errors">0</span></div>
+  </div>
+
+  <div class="text-display blurred" id="text" tabindex="0"></div>
+
+  <div class="hands-wrap">
+    <div class="hint-line" id="hint">Нажми клавишу — <b>палец</b> подсветится</div>
+    <div class="hands" id="hands"></div>
+    <div class="keyboard" id="keyboard"></div>
+  </div>
+
+  <div class="controls">
+    <button class="primary" id="reset">Новый текст</button>
+    <select id="mode">
+      <option value="drill-home-ru">Упражнение: дом. ряд (рус)</option>
+      <option value="drill-home-en">Упражнение: home row (eng)</option>
+      <option value="drill-top-ru">Упражнение: верхний ряд (рус)</option>
+      <option value="drill-top-en">Упражнение: top row (eng)</option>
+      <option value="ru" selected>Текст: русский</option>
+      <option value="en">Текст: английский</option>
+      <option value="code">Текст: код</option>
+    </select>
+    <select id="length">
+      <option value="short">Короткий</option>
+      <option value="medium" selected>Средний</option>
+      <option value="long">Длинный</option>
+    </select>
+    <button class="ghost" id="reset-progress" title="Сбросить прогресс">Сброс прогресса</button>
+  </div>
+
+  <div class="ach-panel">
+    <h2>Достижения <span id="ach-count">0 / 0</span></h2>
+    <div class="ach-grid" id="ach-grid"></div>
+  </div>
+
+  <div class="footnote">
+    <kbd>Esc</kbd> — сброс · <kbd>Tab</kbd> — новый текст · цвет клавиши = зона пальца · очки и уровень сохраняются
+  </div>
+</div>
+
+<script>
+/* ============ FINGER MAP ============ */
+const FINGER_NAMES = {
+  lp: 'Лев. мизинец', lr: 'Лев. безым.', lm: 'Лев. средний', li: 'Лев. указат.',
+  tt: 'Большой',
+  ri: 'Пр. указат.', rm: 'Пр. средний', rr: 'Пр. безым.', rp: 'Пр. мизинец',
+};
+const KEY_TO_FINGER = {
+  '`':'lp','1':'lp','q':'lp','a':'lp','z':'lp',
+  '2':'lr','w':'lr','s':'lr','x':'lr',
+  '3':'lm','e':'lm','d':'lm','c':'lm',
+  '4':'li','5':'li','r':'li','t':'li','f':'li','g':'li','v':'li','b':'li',
+  '6':'ri','7':'ri','y':'ri','u':'ri','h':'ri','j':'ri','n':'ri','m':'ri',
+  '8':'rm','i':'rm','k':'rm',',':'rm',
+  '9':'rr','o':'rr','l':'rr','.':'rr',
+  '0':'rp','-':'rp','=':'rp','p':'rp','[':'rp',']':'rp','\\':'rp',
+  ';':'rp','\'':'rp','/':'rp',
+  'й':'lp','ф':'lp','я':'lp','ё':'lp',
+  'ц':'lr','ы':'lr','ч':'lr',
+  'у':'lm','в':'lm','с':'lm',
+  'к':'li','е':'li','а':'li','п':'li','м':'li','и':'li',
+  'н':'ri','г':'ri','р':'ri','о':'ri','т':'ri','ь':'ri',
+  'ш':'rm','л':'rm','б':'rm',
+  'щ':'rr','д':'rr','ю':'rr',
+  'з':'rp','х':'rp','ъ':'rp','ж':'rp','э':'rp',
+  ' ':'tt', '\n':'rp',
+};
+function fingerFor(ch) {
+  if (ch == null) return null;
+  if (ch === ' ') return 'tt';
+  if (ch === '\n' || ch === '\t') return 'rp';
+  return KEY_TO_FINGER[ch.toLowerCase()] || null;
+}
+
+/* ============ HANDS UI ============ */
+const HOME_RU = { lp:'Ф', lr:'Ы', lm:'В', li:'А', ri:'О', rm:'Л', rr:'Д', rp:'Ж' };
+const HOME_EN = { lp:'A', lr:'S', lm:'D', li:'F', ri:'J', rm:'K', rr:'L', rp:';' };
+const SHAFT_SHORT = '┃\n┃\n┃';
+const SHAFT_LONG  = '┃\n┃\n┃\n┃';
+
+function buildHands() {
+  const wrap = $('hands'); wrap.innerHTML = '';
+  const leftFingers  = [{id:'lp',short:true},{id:'lr',short:false},{id:'lm',short:false},{id:'li',short:true}];
+  const rightFingers = [{id:'ri',short:true},{id:'rm',short:false},{id:'rr',short:false},{id:'rp',short:true}];
+
+  const left = document.createElement('div'); left.className = 'hand';
+  leftFingers.forEach(f => left.appendChild(makeFinger(f)));
+
+  const thumbs = document.createElement('div'); thumbs.className = 'thumb-area';
+  const bar = document.createElement('div'); bar.className = 'thumb-bar'; bar.id = 'thumb-bar';
+  thumbs.appendChild(bar);
+  const tl = document.createElement('div'); tl.className = 'thumb-label';
+  tl.textContent = 'Пробел'; thumbs.appendChild(tl);
+
+  const right = document.createElement('div'); right.className = 'hand';
+  rightFingers.forEach(f => right.appendChild(makeFinger(f)));
+
+  wrap.appendChild(left); wrap.appendChild(thumbs); wrap.appendChild(right);
+}
+function makeFinger({ id, short }) {
+  const el = document.createElement('div');
+  el.className = 'finger f-' + id; el.id = 'finger-' + id;
+  const shaft = document.createElement('div'); shaft.className = 'shaft';
+  shaft.textContent = short ? SHAFT_SHORT : SHAFT_LONG;
+  const tip = document.createElement('div'); tip.className = 'tip'; tip.textContent = '▼';
+  const home = document.createElement('div'); home.className = 'home';
+  home.dataset.finger = id; home.textContent = HOME_RU[id];
+  const name = document.createElement('div'); name.className = 'name';
+  name.textContent = FINGER_NAMES[id].split(' ').pop();
+  el.appendChild(shaft); el.appendChild(tip); el.appendChild(home); el.appendChild(name);
+  return el;
+}
+function updateHomeLabels(lang) {
+  const map = (lang === 'en' || lang === 'code') ? HOME_EN : HOME_RU;
+  document.querySelectorAll('.finger .home').forEach(el => {
+    el.textContent = map[el.dataset.finger] || '';
+  });
+}
+function setActiveFinger(f) {
+  document.querySelectorAll('.finger').forEach(el => el.classList.remove('active'));
+  $('thumb-bar').classList.remove('active');
+  if (!f) return;
+  if (f === 'tt') { $('thumb-bar').classList.add('active'); return; }
+  const el = $('finger-' + f); if (el) el.classList.add('active');
+}
+
+/* ============ KEYBOARD UI ============ */
+const KB_LAYOUTS = {
+  ru: [
+    ['й','ц','у','к','е','н','г','ш','щ','з','х','ъ'],
+    ['ф','ы','в','а','п','р','о','л','д','ж','э'],
+    ['я','ч','с','м','и','т','ь','б','ю','.'],
+  ],
+  en: [
+    ['q','w','e','r','t','y','u','i','o','p'],
+    ['a','s','d','f','g','h','j','k','l',';'],
+    ['z','x','c','v','b','n','m',',','.','/'],
+  ],
+};
+function buildKeyboard(lang) {
+  const wrap = $('keyboard'); wrap.innerHTML = '';
+  const layout = (lang === 'en' || lang === 'code') ? KB_LAYOUTS.en : KB_LAYOUTS.ru;
+  layout.forEach(row => {
+    const r = document.createElement('div'); r.className = 'kb-row';
+    row.forEach(k => {
+      const el = document.createElement('div');
+      const f = fingerFor(k);
+      el.className = 'key ' + (f || '');
+      el.textContent = k; el.dataset.key = k;
+      r.appendChild(el);
+    });
+    wrap.appendChild(r);
+  });
+  const r = document.createElement('div'); r.className = 'kb-row';
+  const sp = document.createElement('div'); sp.className = 'key wide tt';
+  sp.textContent = '␣'; sp.dataset.key = ' ';
+  r.appendChild(sp); wrap.appendChild(r);
+}
+function cssEscape(s) { return s.replace(/[\\"]/g, '\\$&'); }
+function findKeyEl(ch) {
+  if (!ch || ch === '\n') return null;
+  return document.querySelector('.key[data-key="' + cssEscape(ch.toLowerCase()) + '"]');
+}
+function setNextKey(ch) {
+  document.querySelectorAll('.key').forEach(el => el.classList.remove('next'));
+  const el = findKeyEl(ch);
+  if (el) el.classList.add('next');
+}
+
+/* ============ TEXTS / DRILLS ============ */
+const TEXTS = {
+  ru: [
+    "Утром солнце пробивалось сквозь занавески и рисовало на полу тонкие золотые полосы.",
+    "Хорошая книга похожа на разговор с умным другом: она не торопит и всегда готова подождать.",
+    "Чтобы научиться быстро печатать, не нужно смотреть на клавиатуру. Достаточно доверять памяти рук.",
+    "Дорога была длинной, но мы никуда не спешили. В открытые окна врывался запах нагретой травы.",
+  ],
+  en: [
+    "The quick brown fox jumps over the lazy dog while the sun sets behind the distant hills.",
+    "Practice makes perfect. The more you type without looking, the faster your fingers will learn.",
+    "A good cup of coffee in the morning can change the entire day, especially in quiet hours.",
+    "Programming is the art of telling another human being what one wants the computer to do.",
+  ],
+  code: [
+    "const sum = (a, b) => a + b;\nconst result = sum(10, 20);",
+    "function fetchUser(id) {\n  return fetch('/api/users/' + id);\n}",
+    "if (user.active && user.role === 'admin') {\n  return true;\n}",
+  ],
+};
+function genDrill(chars, wordLen = 4, words = 30) {
+  let out = '';
+  for (let w = 0; w < words; w++) {
+    if (w > 0) out += ' ';
+    for (let i = 0; i < wordLen; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return out;
+}
+const DRILLS = {
+  'drill-home-ru': () => genDrill('фывапролдж', 4, 30),
+  'drill-home-en': () => genDrill('asdfjkl;', 4, 30),
+  'drill-top-ru':  () => genDrill('йцукенгшщз', 4, 30),
+  'drill-top-en':  () => genDrill('qwertyuiop', 4, 30),
+};
+const LENGTH_MULT = { short: 1, medium: 2, long: 3 };
+function buildText(mode, length) {
+  if (DRILLS[mode]) {
+    const n = LENGTH_MULT[length];
+    return Array.from({ length: n }, DRILLS[mode]).join(' ');
+  }
+  const pool = TEXTS[mode];
+  const count = LENGTH_MULT[length];
+  const parts = [];
+  for (let i = 0; i < count; i++) parts.push(pool[Math.floor(Math.random() * pool.length)]);
+  return parts.join(' ');
+}
+function modeToLang(mode) {
+  if (mode === 'ru' || mode === 'drill-home-ru' || mode === 'drill-top-ru') return 'ru';
+  return 'en';
+}
+
+/* ============ PROGRESS / LEVELS / ACHIEVEMENTS ============ */
+const STORAGE_KEY = 'toptip-progress-v1';
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return Object.assign(defaultProgress(), JSON.parse(raw));
+  } catch {}
+  return defaultProgress();
+}
+function defaultProgress() {
+  return { xp: 0, bestStreak: 0, bestWpm: 0, totalChars: 0, sessions: 0, achievements: {} };
+}
+function saveProgress() { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }
+let progress = loadProgress();
+
+function xpForLevel(n) { return 80 + (n - 1) * 40; }
+function currentLevel() {
+  let total = 0, lvl = 1;
+  while (total + xpForLevel(lvl) <= progress.xp) { total += xpForLevel(lvl); lvl++; }
+  return { level: lvl, totalAtStart: total, needed: xpForLevel(lvl) };
+}
+const LEVEL_TITLES = [
+  'Новичок','Новичок','Любитель','Любитель',
+  'Печатарь','Печатарь','Печатарь',
+  'Скоропечатник','Скоропечатник','Скоропечатник',
+  'Мастер клавиш','Мастер клавиш','Мастер клавиш',
+  'Виртуоз','Виртуоз','Виртуоз',
+];
+function levelTitle(lvl) {
+  if (lvl <= LEVEL_TITLES.length) return LEVEL_TITLES[lvl - 1];
+  return 'Легенда печати';
+}
+
+const ACHIEVEMENTS = [
+  { id:'first-steps', icon:'👶', name:'Первые шаги',  desc:'Набрать 10 символов',           check:() => progress.totalChars >= 10 },
+  { id:'chars-100',   icon:'💯', name:'Сотня',         desc:'Набрать 100 символов',          check:() => progress.totalChars >= 100 },
+  { id:'chars-500',   icon:'📖', name:'Полтыщи',       desc:'Набрать 500 символов',          check:() => progress.totalChars >= 500 },
+  { id:'chars-1000',  icon:'📜', name:'Тысячник',      desc:'Набрать 1000 символов',         check:() => progress.totalChars >= 1000 },
+  { id:'chars-5000',  icon:'📚', name:'Книжник',       desc:'Набрать 5000 символов',         check:() => progress.totalChars >= 5000 },
+  { id:'streak-10',   icon:'🎯', name:'Серия 10',      desc:'10 правильных подряд',          check:() => progress.bestStreak >= 10 },
+  { id:'streak-25',   icon:'🔥', name:'Серия 25',      desc:'25 правильных подряд',          check:() => progress.bestStreak >= 25 },
+  { id:'streak-50',   icon:'🚀', name:'Серия 50',      desc:'50 правильных подряд',          check:() => progress.bestStreak >= 50 },
+  { id:'streak-100',  icon:'⚡', name:'Серия 100',     desc:'100 правильных подряд',         check:() => progress.bestStreak >= 100 },
+  { id:'streak-250',  icon:'💫', name:'Серия 250',     desc:'250 правильных подряд',         check:() => progress.bestStreak >= 250 },
+  { id:'speed-20',    icon:'🐢', name:'Спринтер',      desc:'Скорость 20+ WPM',              check:() => progress.bestWpm >= 20 },
+  { id:'speed-40',    icon:'🐎', name:'Скакун',        desc:'Скорость 40+ WPM',              check:() => progress.bestWpm >= 40 },
+  { id:'speed-60',    icon:'🏎️', name:'Гонщик',        desc:'Скорость 60+ WPM',              check:() => progress.bestWpm >= 60 },
+  { id:'speed-80',    icon:'✈️', name:'Реактивный',    desc:'Скорость 80+ WPM',              check:() => progress.bestWpm >= 80 },
+  { id:'level-5',     icon:'⭐', name:'5 уровень',     desc:'Достичь 5 уровня',              check:() => currentLevel().level >= 5 },
+  { id:'level-10',    icon:'🌟', name:'10 уровень',    desc:'Достичь 10 уровня',             check:() => currentLevel().level >= 10 },
+  { id:'level-20',    icon:'👑', name:'20 уровень',    desc:'Достичь 20 уровня',             check:() => currentLevel().level >= 20 },
+  { id:'sessions-10', icon:'🎓', name:'Прилежный',     desc:'Завершить 10 сессий',           check:() => progress.sessions >= 10 },
+];
+
+const GIFTS = ['🎁','🌟','⭐','✨','💎','🏆','🎯','⚡','🔥','💫','🎊','🎉','🍭','🎈'];
+
+let currentStreak = 0;
+let comboCelebrated = new Set();
+
+function awardXp(amount) {
+  const before = currentLevel().level;
+  progress.xp += amount;
+  const after = currentLevel().level;
+  saveProgress();
+  updateHeader();
+  if (after > before) triggerLevelUp(after);
+}
+
+function onCorrectChar(ch) {
+  currentStreak++;
+  progress.totalChars++;
+  if (currentStreak > progress.bestStreak) progress.bestStreak = currentStreak;
+
+  let xp = 1;
+  if (currentStreak >= 10) xp = 2;
+  if (currentStreak >= 25) xp = 3;
+  if (currentStreak >= 50) xp = 5;
+  if (currentStreak >= 100) xp = 8;
+
+  awardXp(xp);
+  updateStreakDisplay();
+
+  const isCombo = currentStreak === 10 || currentStreak === 25 || currentStreak === 50 ||
+                  currentStreak === 100 || (currentStreak > 100 && currentStreak % 50 === 0);
+
+  flashKey(ch, true, isCombo);
+
+  if (isCombo && !comboCelebrated.has(currentStreak)) {
+    comboCelebrated.add(currentStreak);
+    flyGift(currentStreak);
+    awardXp(currentStreak);
+    showBigComboText(currentStreak);
+  }
+  checkAchievements();
+}
+
+function onWrongChar(ch) {
+  currentStreak = 0;
+  comboCelebrated.clear();
+  updateStreakDisplay();
+  flashKey(ch, false, false);
+}
+
+function checkAchievements() {
+  ACHIEVEMENTS.forEach(a => {
+    if (!progress.achievements[a.id] && a.check()) {
+      progress.achievements[a.id] = Date.now();
+      saveProgress();
+      showAchievement(a);
+      renderAchievements();
+    }
+  });
+}
+
+function showAchievement(a) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `
+    <div class="toast-title">★ Достижение разблокировано</div>
+    <div class="toast-content">
+      <div class="toast-icon">${a.icon}</div>
+      <div>
+        <div class="toast-name">${a.name}</div>
+        <div class="toast-desc">${a.desc}</div>
+      </div>
+    </div>`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 4500);
+}
+
+function flyGift(streak) {
+  const count = Math.min(1 + Math.floor(streak / 50), 5);
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const g = document.createElement('div');
+      g.className = 'gift';
+      g.textContent = GIFTS[Math.floor(Math.random() * GIFTS.length)];
+      g.style.left = (Math.random() * 80 + 10) + 'vw';
+      document.body.appendChild(g);
+      setTimeout(() => g.remove(), 2600);
+    }, i * 180);
+  }
+}
+
+function showBigComboText(streak) {
+  const el = document.createElement('div');
+  el.className = 'level-up-banner';
+  el.style.background = 'linear-gradient(135deg, var(--lp), var(--cursor))';
+  el.innerHTML = `🔥 КОМБО x${streak}!<br><span style="font-size:14px;font-weight:500;">+${streak} бонусных XP</span>`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1800);
+}
+
+function triggerLevelUp(newLevel) {
+  const flash = document.createElement('div');
+  flash.className = 'flash'; document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 800);
+
+  const banner = document.createElement('div');
+  banner.className = 'level-up-banner';
+  banner.innerHTML = `🎉 Уровень ${newLevel}!<br><span style="font-size:15px;font-weight:500;">${levelTitle(newLevel)}</span>`;
+  document.body.appendChild(banner);
+  setTimeout(() => banner.remove(), 2500);
+
+  for (let i = 0; i < 6; i++) setTimeout(() => flyGift(60), i * 130);
+  checkAchievements();
+}
+
+function showParticle(x, y, text, color) {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  p.textContent = text;
+  p.style.left = x + 'px';
+  p.style.top = y + 'px';
+  p.style.color = color;
+  document.body.appendChild(p);
+  setTimeout(() => p.remove(), 950);
+}
+
+function showSparks(x, y, color, count = 6) {
+  for (let i = 0; i < count; i++) {
+    const s = document.createElement('div');
+    s.className = 'spark';
+    s.style.left = x + 'px'; s.style.top = y + 'px';
+    s.style.background = color;
+    s.style.boxShadow = '0 0 8px ' + color;
+    const ang = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+    const dist = 30 + Math.random() * 30;
+    const dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist;
+    s.animate(
+      [{ transform: 'translate(0,0) scale(1)', opacity: 1 },
+       { transform: `translate(${dx}px,${dy}px) scale(0)`, opacity: 0 }],
+      { duration: 600, easing: 'ease-out' }
+    );
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 600);
+  }
+}
+
+function flashKey(ch, correct, combo) {
+  const el = findKeyEl(ch);
+  if (!el) return;
+  el.classList.remove('correct-hit', 'wrong-hit', 'combo-hit');
+  void el.offsetWidth;
+  el.classList.add(combo ? 'combo-hit' : (correct ? 'correct-hit' : 'wrong-hit'));
+
+  const rect = el.getBoundingClientRect();
+  const x = rect.left + rect.width / 2;
+  const y = rect.top;
+  if (correct) {
+    let text = '+1', color = '#9ece6a';
+    if (currentStreak >= 10)  { text = '+2'; color = '#e0af68'; }
+    if (currentStreak >= 25)  { text = '+3'; color = '#ff9e64'; }
+    if (currentStreak >= 50)  { text = '+5'; color = '#f7768e'; }
+    if (currentStreak >= 100) { text = '+8'; color = '#bb9af7'; }
+    showParticle(x, y, text, color);
+    if (combo) showSparks(rect.left + rect.width/2, rect.top + rect.height/2, color, 12);
+  } else {
+    showParticle(x, y, '✗', '#f7768e');
+  }
+}
+
+function updateStreakDisplay() {
+  const el = $('streak');
+  el.classList.remove('on', 'hot');
+  if (currentStreak === 0) { el.textContent = '—'; return; }
+  el.textContent = (currentStreak >= 10 ? '🔥 ' : '') + currentStreak;
+  if (currentStreak > 0) el.classList.add('on');
+  if (currentStreak >= 10) el.classList.add('hot');
+}
+
+function updateHeader() {
+  const lvl = currentLevel();
+  const progXp = progress.xp - lvl.totalAtStart;
+  const pct = Math.min(100, (progXp / lvl.needed) * 100);
+  $('level-num').textContent = lvl.level;
+  $('level-title').textContent = levelTitle(lvl.level);
+  $('xp-fill').style.width = pct + '%';
+  $('xp-text').textContent = `${progXp} / ${lvl.needed} XP`;
+  $('score').textContent = progress.xp.toLocaleString('ru-RU');
+}
+
+function renderAchievements() {
+  const grid = $('ach-grid'); grid.innerHTML = '';
+  let unlocked = 0;
+  ACHIEVEMENTS.forEach(a => {
+    const has = !!progress.achievements[a.id];
+    if (has) unlocked++;
+    const cell = document.createElement('div');
+    cell.className = 'ach-cell' + (has ? ' unlocked' : '');
+    cell.innerHTML = `${has ? a.icon : '🔒'}<div class="ach-tip"><b>${a.name}</b><br>${a.desc}</div>`;
+    grid.appendChild(cell);
+  });
+  $('ach-count').textContent = `${unlocked} / ${ACHIEVEMENTS.length}`;
+}
+
+/* ============ APP STATE ============ */
+function $(id) { return document.getElementById(id); }
+const textEl = $('text');
+let state = null;
+
+function render() {
+  textEl.innerHTML = '';
+  for (let i = 0; i < state.text.length; i++) {
+    const span = document.createElement('span');
+    span.className = 'char';
+    const ch = state.text[i];
+    span.textContent = ch === '\n' ? '↵\n' : ch;
+    if (ch === '\n') span.style.whiteSpace = 'pre';
+    if (i < state.pos) span.classList.add(state.errors[i] ? 'wrong' : 'correct');
+    else if (i === state.pos) span.classList.add('current');
+    textEl.appendChild(span);
+  }
+  updateNext();
+}
+function updateNext() {
+  const ch = state.text[state.pos];
+  setActiveFinger(fingerFor(ch));
+  setNextKey(ch);
+  const hint = $('hint');
+  if (ch == null) hint.innerHTML = '✓ Готово!';
+  else if (ch === ' ') hint.innerHTML = 'Следующий: <b>пробел</b> — большой палец';
+  else if (ch === '\n') hint.innerHTML = 'Следующий: <b>Enter</b> — правый мизинец';
+  else {
+    const f = fingerFor(ch);
+    const display = ch === ch.toUpperCase() && ch !== ch.toLowerCase()
+      ? `<b>Shift</b>+<b>${ch.toLowerCase()}</b>`
+      : `<b>${ch}</b>`;
+    hint.innerHTML = `Следующий: ${display} — ${f ? FINGER_NAMES[f] : '—'}`;
+  }
+}
+function updateStats() {
+  const elapsed = state.startTime ? (Date.now() - state.startTime) / 1000 : 0;
+  const minutes = elapsed / 60;
+  const wpm = minutes > 0 ? Math.round((state.pos / 5) / minutes) : 0;
+  const wrongCount = state.errors.filter(Boolean).length;
+  const accuracy = state.pos > 0 ? Math.round(((state.pos - wrongCount) / state.pos) * 100) : 100;
+  $('wpm').textContent = wpm;
+  $('accuracy').textContent = accuracy + '%';
+  $('time').textContent = Math.floor(elapsed) + 's';
+  $('errors').textContent = state.totalErrors;
+  return wpm;
+}
+function reset() {
+  const mode = $('mode').value;
+  const length = $('length').value;
+  const lang = modeToLang(mode);
+  state = {
+    text: buildText(mode, length),
+    pos: 0, errors: [], totalErrors: 0,
+    startTime: null, finished: false,
+  };
+  currentStreak = 0;
+  comboCelebrated.clear();
+  updateHomeLabels(lang);
+  buildKeyboard(lang);
+  updateStreakDisplay();
+  render();
+  updateStats();
+  textEl.classList.add('blurred');
+}
+
+function finishSession() {
+  const wpm = updateStats();
+  if (wpm > progress.bestWpm) progress.bestWpm = wpm;
+  progress.sessions++;
+  awardXp(20);
+  saveProgress();
+  checkAchievements();
+}
+
+/**
+ * Check if any modal overlay is currently visible in the DOM.
+ * Used to let Tab key pass through when modals are open.
+ */
+function isModalOpen() {
+  return document.querySelector('.modal-overlay') !== null;
+}
+
+function handleKey(e) {
+  // When a modal (login/register/code-verify/profile) is open,
+  // let all keys pass through to allow normal form interaction.
+  if (isModalOpen()) return;
+
+  if (!state) return;
+  if (e.key === 'Escape') { reset(); return; }
+  if (e.key === 'Tab') { e.preventDefault(); reset(); return; }
+  if (state.finished) return;
+  if (document.activeElement !== textEl) return;
+
+  if (e.key === 'Backspace') {
+    e.preventDefault();
+    if (state.pos > 0) {
+      state.pos--;
+      state.errors[state.pos] = false;
+      render(); updateStats();
+    }
+    return;
+  }
+  let key = e.key;
+  if (e.key === 'Enter') key = '\n';
+  if (key.length !== 1 && key !== '\n') return;
+
+  e.preventDefault();
+  if (!state.startTime) state.startTime = Date.now();
+
+  const expected = state.text[state.pos];
+  const isCorrect = key === expected;
+  if (isCorrect) { state.errors[state.pos] = false; onCorrectChar(expected); }
+  else           { state.errors[state.pos] = true;  state.totalErrors++; onWrongChar(expected); }
+
+  state.pos++;
+  if (state.pos >= state.text.length) {
+    state.finished = true;
+    finishSession();
+  }
+  render(); updateStats();
+}
+
+textEl.addEventListener('focus', () => textEl.classList.remove('blurred'));
+textEl.addEventListener('blur', () => {
+  if (state && state.pos === 0) textEl.classList.add('blurred');
+});
+textEl.addEventListener('click', () => textEl.focus());
+document.addEventListener('keydown', handleKey);
+$('reset').addEventListener('click', () => { reset(); textEl.focus(); });
+$('mode').addEventListener('change', reset);
+$('length').addEventListener('change', reset);
+$('reset-progress').addEventListener('click', () => {
+  if (confirm('Сбросить весь прогресс (уровень, очки, достижения)?')) {
+    progress = defaultProgress();
+    saveProgress();
+    updateHeader();
+    renderAchievements();
+  }
+});
+
+let lastTick = 0;
+function tick() {
+  if (state && state.startTime && !state.finished) {
+    const now = Date.now();
+    if (now - lastTick > 200) { updateStats(); lastTick = now; }
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+buildHands();
+updateHeader();
+renderAchievements();
+reset();
+</script>
+</body>
+</html>

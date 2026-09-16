@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TopTipTop — Тренажёр слепой печати</title>
+<link rel="stylesheet" href="css/style.css">
+<script>
+  // Blocking script to prevent theme flash — apply saved theme before any rendering
+  try {
+    var savedTheme = localStorage.getItem('toptip-theme');
+    if (savedTheme === 'light') {
+      document.documentElement.classList.add('light-theme');
+    }
+  } catch(e) {}
+</script>
+</head>
+<body>
+<div class="app start-mode">
+
+  <!-- Auth bar (injected by auth.js) -->
+  <div class="auth-bar" id="auth-bar"></div>
+
+  <!-- ============ ACHIEVEMENTS PANEL (always visible for all users) ============ -->
+  <div class="ach-panel" id="ach-panel">
+    <h2><span data-i18n="label.achievements">🏆 Достижения</span> <span id="ach-count">0 / 0</span></h2>
+    <div class="ach-grid" id="ach-grid"></div>
+  </div>
+
+  <!-- Compact top bar: Level + XP + Score (always visible for all users) -->
+  <div class="top-bar" id="progress-header">
+    <div class="level-compact">
+      <div class="lvl-badge" id="level-num">1</div>
+      <div>
+        <div class="lvl-title" id="level-title">Новичок</div>
+        <div class="xp-compact" id="xp-text">0 / 100 XP</div>
+      </div>
+    </div>
+    <div class="xp-mini"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+    <div class="score-compact">
+      <span class="sc-label" data-i18n="label.score">Очки</span>
+      <span class="sc-value" id="score">0</span>
+    </div>
+  </div>
+
+  <!-- Compact stats row -->
+  <div class="stats-row">
+    <div class="stat-item">
+      <span class="st-label" data-i18n="stats.speed">Скорость</span>
+      <span class="st-value" id="wpm">0</span>
+    </div>
+    <div class="stat-item">
+      <span class="st-label" data-i18n="stats.accuracy">Точность</span>
+      <span class="st-value" id="accuracy">100%</span>
+    </div>
+    <div class="stat-item">
+      <span class="st-label" data-i18n="stats.streak">Серия</span>
+      <span class="st-value streak" id="streak">—</span>
+    </div>
+    <div class="stat-item">
+      <span class="st-label" data-i18n="stats.time">Время</span>
+      <span class="st-value" id="time">0s</span>
+    </div>
+    <div class="stat-item">
+      <span class="st-label" data-i18n="stats.errors">Ошибки</span>
+      <span class="st-value" id="errors">0</span>
+    </div>
+  </div>
+
+  <!-- Controls row (mode, length, buttons) -->
+  <div class="controls-row" id="controls">
+    <button class="primary" id="reset" data-i18n="btn.new_text">Новый текст</button>
+    <select id="mode">
+      <option value="drill-home-ru" data-i18n="drill.home_ru">Упр: дом. ряд (рус)</option>
+      <option value="drill-home-en" data-i18n="drill.home_en">Упр: home row (eng)</option>
+      <option value="drill-top-ru" data-i18n="drill.top_ru">Упр: верхний ряд (рус)</option>
+      <option value="drill-top-en" data-i18n="drill.top_en">Упр: top row (eng)</option>
+      <option value="ru" selected data-i18n="text.ru">Текст: русский</option>
+      <option value="en" data-i18n="text.en">Текст: английский</option>
+      <option value="code" data-i18n="text.code">Текст: код</option>
+    </select>
+    <select id="length">
+      <option value="short" data-i18n="label.short">Короткий</option>
+      <option value="medium" selected data-i18n="label.medium">Средний</option>
+      <option value="long" data-i18n="label.long">Длинный</option>
+    </select>
+    <button class="ghost" id="reset-progress" data-i18n="btn.reset_progress" title="Сбросить прогресс">
+      Сброс прогресса
+    </button>
+  </div>
+
+  <!-- ============ START BUTTON — Hero section ============ -->
+  <div class="start-btn-wrap">
+    <div class="start-btn-glow"></div>
+    <button class="start-btn" id="btn-start" data-i18n="btn.start">🚀 Старт</button>
+    <p class="start-sub" data-i18n="prompt.click_hint">Нажми, чтобы начать тренировку</p>
+  </div>
+
+  <!-- ============ BACK BUTTON (focus-mode only) ============ -->
+  <button class="back-btn hidden" id="btn-back" data-i18n="btn.back">← Назад</button>
+
+  <!-- ============ FOCUS-MODE COMPACT STATS ============ -->
+  <div class="focus-stats hidden" id="focus-stats">
+    <span class="fs-item" id="fs-wpm-label"><span data-i18n="stats.speed">Скорость</span> <b id="fs-wpm">0</b></span>
+    <span class="fs-item" id="fs-accuracy-label"><span data-i18n="stats.accuracy">Точность</span> <b id="fs-accuracy">100%</b></span>
+    <span class="fs-item" id="fs-streak-label"><span data-i18n="stats.streak">Серия</span> <b id="fs-streak">—</b></span>
+    <span class="fs-item" id="fs-time-label"><span data-i18n="stats.time">Время</span> <b id="fs-time">0s</b></span>
+    <span class="fs-item" id="fs-errors-label"><span data-i18n="stats.errors">Ошибки</span> <b id="fs-errors">0</b></span>
+  </div>
+
+  <!-- Text display area -->
+  <div class="text-display blurred" id="text" tabindex="0" data-hint-text="Кликни сюда и начинай печатать"></div>
+
+  <!-- Hands + keyboard -->
+  <div class="hands-wrap">
+    <!-- Layout indicator for mixed-language texts (shown in focus-mode) -->
+    <div class="layout-row hidden" id="layout-row">
+      <div class="layout-indicator hidden" id="layout-indicator">🔤</div>
+      <button class="layout-toggle" id="layout-toggle" title="Переключить раскладку (Alt+Shift)">EN</button>
+      <span class="layout-hint" data-i18n="layout.press_alt_shift"><kbd>Alt</kbd>+<kbd>Shift</kbd> — переключить</span>
+    </div>
+    <div class="hint-line" id="hint">
+      <span data-i18n="hint.default">Нажми клавишу —</span> <b>палец</b> <span data-i18n="hint.finger_space">подсветится</span>
+    </div>
+    <div class="hands" id="hands"></div>
+    <div class="keyboard" id="keyboard"></div>
+  </div>
+
+  <!-- Footer (no data-i18n — rebuilt dynamically by i18n.js to preserve <kbd> elements) -->
+  <div class="footnote">
+    <kbd>Esc</kbd> — сброс ·
+    <kbd>Tab</kbd> — новый текст ·
+    <kbd>⌫</kbd> — отмена символа ·
+    <kbd>Alt+Shift</kbd> — смена раскладки ·
+    цвет клавиши = зона пальца · стрелка = направление движения
+  </div>
+</div>
+
+<!-- ============ COMPLETION OVERLAY ============ -->
+<div class="completion-overlay hidden" id="completion-overlay">
+  <div class="completion-card">
+    <div class="completion-title" data-i18n="completion.title">✓ Текст завершён!</div>
+    <div class="completion-stats">
+      <div class="cstat">
+        <span class="cstat-label" data-i18n="completion.wpm">Скорость</span>
+        <span class="cstat-value" id="c-wpm">0</span>
+        <span class="cstat-unit">WPM</span>
+      </div>
+      <div class="cstat">
+        <span class="cstat-label" data-i18n="completion.accuracy">Точность</span>
+        <span class="cstat-value" id="c-accuracy">100%</span>
+      </div>
+      <div class="cstat">
+        <span class="cstat-label" data-i18n="completion.time">Время</span>
+        <span class="cstat-value" id="c-time">0s</span>
+      </div>
+      <div class="cstat">
+        <span class="cstat-label" data-i18n="completion.errors">Ошибки</span>
+        <span class="cstat-value" id="c-errors">0</span>
+      </div>
+      <div class="cstat cstat-xp">
+        <span class="cstat-label" data-i18n="completion.xp">XP получено</span>
+        <span class="cstat-value" id="c-xp">+0</span>
+      </div>
+    </div>
+    <div class="completion-actions">
+      <button class="primary-btn" id="btn-next-text" data-i18n="btn.next_text">Следующий текст →</button>
+      <button class="ghost-btn" id="btn-to-menu" data-i18n="btn.to_menu">В меню</button>
+    </div>
+  </div>
+</div>
+
+<!-- Side panels (hidden by default, toggled by auth.js) -->
+<div class="side-panel" id="history-panel"></div>
+<div class="side-panel" id="leaderboard-panel"></div>
+
+<!-- Main entry point (ES module) -->
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
