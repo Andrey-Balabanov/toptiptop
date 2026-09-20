@@ -149,8 +149,18 @@ async function init() {
     $('admin-identity').textContent = `${currentUser.username} · ${currentUser.email || ''}`;
     await loadUsers();
   } catch (error) {
-    setStatus(error.message || 'Нет доступа к админ-панели', 'error');
-    setTimeout(() => { window.location.href = '/'; }, 1200);
+    const message = error.message || 'Нет доступа к админ-панели';
+    setStatus(message, 'error');
+    $('admin-identity').textContent = 'Проверка доступа не пройдена';
+    $('users-body').innerHTML = `
+      <tr>
+        <td colspan="5" class="access-error">
+          <strong>${escapeHtml(message)}</strong>
+          <span>Проверьте роль admin и переменные ADMIN_EMAIL / ADMIN_PASSWORD в Render.</span>
+        </td>
+      </tr>
+    `;
+    $('empty-state').hidden = true;
   }
 }
 
