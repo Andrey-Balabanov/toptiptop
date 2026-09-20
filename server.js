@@ -116,6 +116,11 @@ app.use('/api/sessions', sessionRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 
+// Dedicated admin UI; the page performs its own authenticated role check.
+app.get('/admin', (req, res) => {
+  res.sendFile(path.resolve(publicDir, 'admin.html'));
+});
+
 // SPA fallback — serve index.html for all non-API routes
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api/')) {

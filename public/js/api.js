@@ -154,3 +154,24 @@ export function fetchSessions(params = {}) {
 export function fetchLeaderboard(type = 'wpm', limit = 20) {
   return request('GET', `/users/leaderboard?type=${type}&limit=${limit}`);
 }
+
+/* Admin endpoints */
+export function fetchAdminUsers({ search = '', banned = false } = {}) {
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  if (banned) params.set('banned', '1');
+  const query = params.toString();
+  return request('GET', '/admin/users' + (query ? '?' + query : ''));
+}
+
+export function updateAdminUser(id, changes) {
+  return request('PATCH', `/admin/users/${id}`, changes);
+}
+
+export function deleteAdminUser(id) {
+  return request('DELETE', `/admin/users/${id}`);
+}
+
+export function resetAdminPassword(id, password) {
+  return request('POST', `/admin/users/${id}/reset-password`, { password });
+}

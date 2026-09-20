@@ -20,10 +20,14 @@ export function renderAuthBar() {
       .then(user => {
         bar.innerHTML = `
           <span class="username">${escapeHtml(user.username)}</span>
+          ${user.role === 'admin' ? '<button class="small" id="btn-admin">Админ-панель</button>' : ''}
           <button class="theme-btn" id="btn-theme" title="${t('label.theme')}">🌙/☀️</button>
           <button class="small" id="btn-logout">${t('auth.logout')}</button>
         `;
         applyLanguageToDOM();
+
+        const adminBtn = document.getElementById('btn-admin');
+        if (adminBtn) adminBtn.onclick = () => { window.location.href = '/admin.html'; };
 
         document.getElementById('btn-logout').onclick = () => {
           api.setToken(null);

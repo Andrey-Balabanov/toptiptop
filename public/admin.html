@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TopTipTop — Админ-панель</title>
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+<main class="admin-shell">
+  <header class="admin-header">
+    <div>
+      <p class="eyebrow">TopTipTop / control room</p>
+      <h1>Админ-панель</h1>
+      <p id="admin-identity" class="muted">Проверка доступа...</p>
+    </div>
+    <div class="header-actions">
+      <a class="button ghost" href="/">К тренажёру</a>
+      <button class="button ghost" id="logout-button" type="button">Выйти</button>
+    </div>
+  </header>
+
+  <section class="toolbar" aria-label="Фильтры пользователей">
+    <label class="search-field">
+      <span>Поиск</span>
+      <input id="search-input" type="search" placeholder="Имя или email" autocomplete="off">
+    </label>
+    <label class="check-field">
+      <input id="banned-only" type="checkbox">
+      <span>Только заблокированные</span>
+    </label>
+    <button class="button primary" id="refresh-button" type="button">Обновить</button>
+  </section>
+
+  <p id="status" class="status" role="status"></p>
+
+  <section class="table-wrap" aria-label="Пользователи">
+    <table>
+      <thead>
+        <tr>
+          <th>Пользователь</th>
+          <th>Роль</th>
+          <th>Статистика</th>
+          <th>Состояние</th>
+          <th class="actions-heading">Действия</th>
+        </tr>
+      </thead>
+      <tbody id="users-body"></tbody>
+    </table>
+    <div id="empty-state" class="empty-state" hidden>Пользователи не найдены.</div>
+  </section>
+</main>
+<script type="module" src="js/admin.js"></script>
+</body>
+</html>
