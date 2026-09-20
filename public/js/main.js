@@ -88,9 +88,9 @@ let currentKeyboardLayout = 'pc-ansi';
 let currentProfile = 'general';
 
 /* Movement arrows toggle — persisted in localStorage */
-let showMovementArrows = false;
+let showMovementArrows = true;
 try {
-  showMovementArrows = localStorage.getItem('toptip-show-arrows') === 'true';
+  showMovementArrows = localStorage.getItem('toptip-show-arrows') !== 'false';
 } catch {}
 
 /* Listen for arrow toggle events from sidebar buttons (auth.js) */
@@ -409,6 +409,7 @@ function buildKeyboard(lang) {
   if (state) {
     const ch = state.text[state.pos];
     setShiftHighlight(needsShift(ch));
+    updateKeyboardArrow(ch, lang);
   }
 }
 

@@ -218,25 +218,28 @@ export function resetProgress() {
 
 /* Load progress from server data (called after login) */
 export function initFromServer(userData) {
-  // Merge guest progress with server data — server data takes priority for XP,
-  // but guest achievements are preserved so they aren't lost on login.
-  const guestAchievements = progress.achievements || {};
+  // Restore the locally persisted progress first. Authenticated users do not
+  // call init(), so without this step a page reload starts from an empty state.
+  const storedProgress = loadProgress();
+  const localAchievements = {
+    ...(storedProgress.achievements || {}),
+    ...(progress.achievements || {}),
+  };
 
+  // Server data is authoritative for account-wide statistics, while local
+  // achievements and total character count remain available until the server
+  // has dedicated fields for them.
+  progress.totalChars = Math.max(
+    storedProgress.totalChars || 0,
+    progress.totalChars || 0,
+  );
   progress.xp = userData.totalXp || 0;
   progress.bestStreak = userData.bestStreak || 0;
   progress.bestWpm = userData.bestWpm || 0;
   progress.sessions = userData.sessionCount || 0;
-  progress.totalChars = 0;
-  progress.achievements = {};
+  progress.achievements = localAchievements;
 
-  // Merge guest achievements into server achievements (guest's don't overwrite server's)
-  // If guest unlocked something the server doesn't know about, keep it.
-  for (const [id, timestamp] of Object.entries(guestAchievements)) {
-    if (!progress.achievements[id]) {
-      progress.achievements[id] = timestamp;
-    }
-  }
-
+  initialized = true;
   saveProgress();
   // Re-check achievements against server stats
   checkAchievements();

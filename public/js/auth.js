@@ -104,10 +104,10 @@ function addSidebarButtons(user) {
   const arrowBtn = document.createElement('button');
   arrowBtn.className = 'small';
   arrowBtn.textContent = t('btn.arrows');
-  const showArrows = localStorage.getItem('toptip-show-arrows') === 'true';
+  const showArrows = localStorage.getItem('toptip-show-arrows') !== 'false';
   if (showArrows) arrowBtn.classList.add('active');
   arrowBtn.onclick = () => {
-    const current = localStorage.getItem('toptip-show-arrows') === 'true';
+    const current = localStorage.getItem('toptip-show-arrows') !== 'false';
     const next = !current;
     localStorage.setItem('toptip-show-arrows', next ? 'true' : 'false');
     arrowBtn.classList.toggle('active', next);
