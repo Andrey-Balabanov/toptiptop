@@ -13,12 +13,13 @@ const { bootstrapAdmin } = require('./src/services/admin');
 
 const app = express();
 
-// Trust proxy hops when deployed behind a reverse proxy (nginx, etc.).
-// Set TRUST_PROXY=1 (or the number of hops) in .env so rate limiters
-// see the real client IP instead of the proxy IP (which is shared by ALL users
-// and previously caused the whole app to get blocked together).
-if (process.env.TRUST_PROXY) {
-  const hops = parseInt(process.env.TRUST_PROXY, 10);
+// Render and other reverse proxies forward the client IP in X-Forwarded-For.
+// Trust one proxy by default in production so express-rate-limit can identify
+// clients correctly; TRUST_PROXY can override this for a different topology.
+const trustProxyValue = process.env.TRUST_PROXY ||
+  (process.env.NODE_ENV === 'production' || process.env.RENDER ? '1' : '');
+if (trustProxyValue) {
+  const hops = parseInt(trustProxyValue, 10);
   app.set('trust proxy', Number.isFinite(hops) && hops > 0 ? hops : 1);
 }
 
