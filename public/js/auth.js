@@ -50,7 +50,10 @@ export function renderAuthBar() {
         window.dispatchEvent(new CustomEvent('auth-login', { detail: { user } }));
       })
       .catch(() => {
-        api.setToken(null);
+        if (api.isLoggedIn()) {
+          bar.textContent = 'Не удалось проверить сессию. Обновите страницу.';
+          return;
+        }
         renderGuestBar();
         window.dispatchEvent(new CustomEvent('auth-logout'));
       });

@@ -137,7 +137,8 @@ async function init() {
   });
 
   if (!api.isLoggedIn()) {
-    window.location.href = '/';
+    setStatus('Войдите в аккаунт с ролью администратора через главную страницу.', 'error');
+    $('admin-identity').textContent = 'Требуется вход';
     return;
   }
 

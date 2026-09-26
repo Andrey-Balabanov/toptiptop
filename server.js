@@ -100,7 +100,9 @@ app.use(express.static(publicDir, {
   etag: true,
   setHeaders(res, filePath) {
     const ext = path.extname(filePath).toLowerCase();
-    if (ext === '.js' || ext === '.css') {
+    if (ext === '.js') {
+      res.setHeader('Cache-Control', 'no-cache');
+    } else if (ext === '.css') {
       res.setHeader('Cache-Control', 'public, max-age=3600');
     }
   },

@@ -6,6 +6,11 @@ let authToken = null;
 try {
   authToken = localStorage.getItem('toptip-token') || null;
 } catch {}
+if (!authToken) {
+  try {
+    authToken = sessionStorage.getItem('toptip-token') || null;
+  } catch {}
+}
 
 export function getToken() {
   return authToken;
@@ -13,13 +18,21 @@ export function getToken() {
 
 export function setToken(token) {
   authToken = token;
-  try {
-    if (token) {
+  if (token) {
+    try {
       localStorage.setItem('toptip-token', token);
-    } else {
+    } catch {}
+    try {
+      sessionStorage.setItem('toptip-token', token);
+    } catch {}
+  } else {
+    try {
       localStorage.removeItem('toptip-token');
-    }
-  } catch {}
+    } catch {}
+    try {
+      sessionStorage.removeItem('toptip-token');
+    } catch {}
+  }
 }
 
 export function isLoggedIn() {
