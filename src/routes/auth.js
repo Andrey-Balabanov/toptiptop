@@ -7,6 +7,7 @@ const {
   resendCode,
 } = require('../services/auth');
 const { validateLoginBody, validateAuthBody } = require('../middleware/validate');
+const { clearAuthCookies, setAuthCookies } = require('../middleware/authCookies');
 
 const router = Router();
 
@@ -35,6 +36,7 @@ router.post('/register', validateAuthBody, async (req, res) => {
     }
 
     const result = await registerUser(username, email, password);
+    if (result.token) setAuthCookies(res, result.token);
 
     // If code is returned as fallback (dev mode without MAIL_HOST), include it
     if (result.code) {
@@ -92,6 +94,7 @@ router.post('/verify-email', async (req, res) => {
       return res.status(400).json({ error: 'Email и код обязательны' });
     }
     const result = await verifyEmail(email, code);
+    if (result.token) setAuthCookies(res, result.token);
     res.json(result);
   } catch (err) {
     if (err.message === 'INVALID_OR_EXPIRED_CODE') {
@@ -113,6 +116,7 @@ router.post('/login', validateLoginBody, async (req, res) => {
   try {
     const { email, password } = req.body;
     const result = await loginWithEmail(email, password);
+    setAuthCookies(res, result.token);
     res.json(result);
   } catch (err) {
     if (err.message === 'INVALID_CREDENTIALS') {
@@ -124,6 +128,11 @@ router.post('/login', validateLoginBody, async (req, res) => {
     console.error('Login error:', err);
     res.status(500).json({ error: 'Ошибка входа' });
   }
+});
+
+router.post('/logout', (req, res) => {
+  clearAuthCookies(res);
+  res.json({ ok: true });
 });
 
 module.exports = router;

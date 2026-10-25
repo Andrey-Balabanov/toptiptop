@@ -32,11 +32,27 @@ export function setToken(token) {
     try {
       sessionStorage.removeItem('toptip-token');
     } catch {}
+    try {
+      document.cookie = 'toptip_authenticated=; Max-Age=0; Path=/; SameSite=Lax';
+    } catch {}
   }
 }
 
 export function isLoggedIn() {
-  return !!authToken;
+  if (authToken) return true;
+  try {
+    return document.cookie.split(';').some(cookie => cookie.trim() === 'toptip_authenticated=1');
+  } catch {
+    return false;
+  }
+}
+
+export async function logout() {
+  try {
+    await fetch(BASE_URL + '/auth/logout', { method: 'POST' });
+  } finally {
+    setToken(null);
+  }
 }
 
 async function request(method, path, body = null) {
@@ -59,23 +75,29 @@ async function request(method, path, body = null) {
       if (res.status === 401) {
         setToken(null);
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'UNAUTHORIZED');
+        const error = new Error(data.error || 'UNAUTHORIZED');
+        error.status = res.status;
+        throw error;
       }
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `HTTP ${res.status}`);
+        const error = new Error(data.error || `HTTP ${res.status}`);
+        error.status = res.status;
+        throw error;
       }
       return await res.json();
     } catch (err) {
       lastErr = err;
-      if (err.message === 'UNAUTHORIZED') throw err;
+      if (err.status || path.startsWith('/auth/')) throw err;
       if (attempt < 2) {
         await new Promise(r => setTimeout(r, (attempt + 1) * 500));
       }
     }
   }
   // All retries exhausted - queue for later sync
-  queueForLater({ method, path, body });
+  if (!path.startsWith('/auth/') && !path.endsWith('/reset-password')) {
+    queueForLater({ method, path, body });
+  }
   throw lastErr;
 }
 

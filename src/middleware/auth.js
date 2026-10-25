@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const config = require('../config');
 const { getDb } = require('../db');
+const { clearAuthCookies, getAuthToken } = require('./authCookies');
 
 /**
  * Authenticates the user via JWT, then loads the fresh user row from the DB
@@ -8,20 +9,22 @@ const { getDb } = require('../db');
  * for token expiry). Rejects banned accounts on every protected route.
  */
 function authMiddleware(req, res, next) {
-  const header = req.headers.authorization;
-  if (!header || !header.startsWith('Bearer ')) {
+  const token = getAuthToken(req);
+  if (!token) {
+    clearAuthCookies(res);
     return res.status(401).json({ error: 'Требуется авторизация' });
   }
-  const token = header.slice(7);
 
   let payload;
   try {
     payload = jwt.verify(token, config.jwtSecret);
   } catch (err) {
+    clearAuthCookies(res);
     return res.status(401).json({ error: 'Токен недействителен или истёк' });
   }
 
   if (!payload || !payload.userId) {
+    clearAuthCookies(res);
     return res.status(401).json({ error: 'Токен недействителен или истёк' });
   }
 
@@ -32,9 +35,11 @@ function authMiddleware(req, res, next) {
   ).get(payload.userId);
 
   if (!user) {
+    clearAuthCookies(res);
     return res.status(401).json({ error: 'Пользователь не найден' });
   }
   if (user.is_banned) {
+    clearAuthCookies(res);
     return res.status(403).json({ error: 'Аккаунт заблокирован администратором' });
   }
 

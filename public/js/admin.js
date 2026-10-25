@@ -86,7 +86,9 @@ async function handleAction(event) {
   if (!action || !id) return;
 
   if (action === 'role') {
-    await updateUser(id, { role: target.value });
+    if (event.type === 'change') {
+      await updateUser(id, { role: target.value });
+    }
     return;
   }
 
@@ -123,8 +125,8 @@ async function handleAction(event) {
 }
 
 async function init() {
-  $('logout-button').onclick = () => {
-    api.setToken(null);
+  $('logout-button').onclick = async () => {
+    await api.logout();
     window.location.href = '/';
   };
   $('refresh-button').onclick = loadUsers;

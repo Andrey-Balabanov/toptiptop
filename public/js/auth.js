@@ -29,8 +29,8 @@ export function renderAuthBar() {
         const adminBtn = document.getElementById('btn-admin');
         if (adminBtn) adminBtn.onclick = () => { window.location.href = '/admin.html'; };
 
-        document.getElementById('btn-logout').onclick = () => {
-          api.setToken(null);
+        document.getElementById('btn-logout').onclick = async () => {
+          await api.logout();
           if (onAuthChange) onAuthChange();
         };
 
