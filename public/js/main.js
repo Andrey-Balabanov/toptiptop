@@ -531,7 +531,29 @@ function render() {
     else if (i === state.pos) span.classList.add('current');
     textEl.appendChild(span);
   }
+  renderTypeLine();
   updateNext();
+}
+
+/* Single-line strip above the keyboard: typed text on the left, cursor + upcoming on the right */
+const TYPE_LINE_SPAN = 40;
+function renderTypeLine() {
+  const before = $('tl-before');
+  const after = $('tl-after');
+  if (!before || !after) return;
+  before.innerHTML = '';
+  after.innerHTML = '';
+  const from = Math.max(0, state.pos - TYPE_LINE_SPAN);
+  const to = Math.min(state.text.length, state.pos + TYPE_LINE_SPAN);
+  for (let i = from; i < to; i++) {
+    const span = document.createElement('span');
+    span.className = 'char';
+    const ch = state.text[i];
+    span.textContent = ch === '\n' ? '↵' : ch;
+    if (i < state.pos) span.classList.add(state.errors[i] ? 'wrong' : 'correct');
+    else if (i === state.pos) span.classList.add('current');
+    (i < state.pos ? before : after).appendChild(span);
+  }
 }
 
 function updateNext() {
@@ -823,6 +845,8 @@ function exitFocusMode() {
   // Clear text display and reset stats
   textEl.innerHTML = '';
   textEl.classList.add('blurred');
+  $('tl-before').innerHTML = '';
+  $('tl-after').innerHTML = '';
   const wpmEl = $('wpm');
   const accEl = $('accuracy');
   const timeEl = $('time');

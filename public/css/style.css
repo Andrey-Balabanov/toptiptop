@@ -119,17 +119,17 @@ body {
 }
 
 .app.focus-mode .key {
-  width: 52px;
-  height: 52px;
-  font-size: 16px;
+  width: 64px;
+  height: 64px;
+  font-size: 20px;
 }
 .app.focus-mode .key.shift {
-  width: 88px;
-  font-size: 18px;
+  width: 108px;
+  font-size: 22px;
 }
 .app.focus-mode .key.space {
-  width: 240px;
-  font-size: 22px;
+  width: 300px;
+  font-size: 26px;
 }
 .app.focus-mode .finger {
   width: 64px;
@@ -470,6 +470,20 @@ body {
 /* Space characters must preserve their whitespace so they render with visible width */
 .char.space { white-space: pre; }
 
+/* ============ TYPE LINE (single-line copy above the keyboard) ============ */
+.type-line {
+  display: flex; width: 100%; max-width: 900px; margin-bottom: 8px;
+  font-family: "SF Mono", Menlo, Monaco, monospace;
+  font-size: 26px; line-height: 1.5; white-space: pre;
+  background: var(--panel-2); border: 1px solid var(--key-border);
+  border-radius: 8px; padding: 6px 0; user-select: none;
+}
+.type-line .tl-before { flex: 1 1 0; display: flex; justify-content: flex-end; overflow: hidden; }
+.type-line .tl-after { flex: 1 1 0; display: flex; justify-content: flex-start; overflow: hidden; }
+.type-line .tl-before { -webkit-mask-image: linear-gradient(to right, transparent, #000 40%); mask-image: linear-gradient(to right, transparent, #000 40%); }
+.type-line .tl-after { -webkit-mask-image: linear-gradient(to left, transparent, #000 40%); mask-image: linear-gradient(to left, transparent, #000 40%); }
+.type-line .char { flex-shrink: 0; }
+
 /* ============ HANDS ============ */
 .hands-wrap {
   background: var(--panel); border-radius: 10px;
@@ -795,7 +809,8 @@ kbd { background: var(--panel); padding: 2px 6px; border-radius: 3px; font-famil
   .thumb-bar { width: 55px; height: 10px; }
   body { padding: 4px; }
 
-  .app.focus-mode .key { width: 28px; height: 28px; font-size: 9px; }
+  .app.focus-mode .key { width: 30px; height: 30px; font-size: 10px; }
+  .type-line { font-size: 18px; padding: 4px 0; }
   .app.focus-mode .key.shift { width: 44px; font-size: 11px; }
   .app.focus-mode .key.space { width: 70px; font-size: 10px; }
   .app.focus-mode .finger { width: 32px; }
@@ -920,9 +935,9 @@ kbd { background: var(--panel); padding: 2px 6px; border-radius: 3px; font-famil
   .keyboard { margin-top: 8px; }
   .kb-row { gap: 2px; }
 
-  .app.focus-mode .key { width: 38px; height: 38px; font-size: 13px; }
-  .app.focus-mode .key.shift { width: 62px; font-size: 15px; }
-  .app.focus-mode .key.space { width: 160px; font-size: 17px; }
+  .app.focus-mode .key { width: 44px; height: 44px; font-size: 15px; }
+  .app.focus-mode .key.shift { width: 72px; font-size: 16px; }
+  .app.focus-mode .key.space { width: 180px; font-size: 18px; }
   .app.focus-mode .finger { width: 52px; }
   .app.focus-mode .finger .shaft { font-size: 16px; }
   .app.focus-mode .finger .home { font-size: 12px; min-width: 28px; }
@@ -930,6 +945,7 @@ kbd { background: var(--panel); padding: 2px 6px; border-radius: 3px; font-famil
   .app.focus-mode .thumb-bar { width: 90px; }
   .app.focus-mode .text-display { font-size: min(3.5vw, 26px); padding: 14px 16px; }
   .app.focus-mode .text-display .char { font-size: min(3.5vw, 26px); }
+  .type-line { font-size: 22px; }
 }
 
 /* ---- DESKTOP (>= 801px) ---- */
@@ -1029,9 +1045,9 @@ kbd { background: var(--panel); padding: 2px 6px; border-radius: 3px; font-famil
 
   .app.start-mode .footnote { font-size: 11px; line-height: 1.4; }
 
-  .app.focus-mode .key { width: 52px; height: 52px; font-size: 16px; }
-  .app.focus-mode .key.shift { width: 88px; font-size: 18px; }
-  .app.focus-mode .key.space { width: 240px; font-size: 22px; }
+  .app.focus-mode .key { width: 64px; height: 64px; font-size: 20px; }
+  .app.focus-mode .key.shift { width: 108px; font-size: 22px; }
+  .app.focus-mode .key.space { width: 300px; font-size: 26px; }
   .app.focus-mode .finger { width: 64px; }
   .app.focus-mode .finger .shaft { font-size: 18px; }
   .app.focus-mode .finger .home { font-size: 14px; min-width: 32px; }
