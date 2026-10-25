@@ -3,3 +3,7 @@ node_modules/
 data/
 *.db
 .DS_Store
+
+# didev
+.didev/sessions
+.didev/secrets

@@ -1,0 +1,60 @@
+api:
+  provider: deepseek
+  apiKey: ${DEEPSEEK_API_KEY}
+  model: deepseek-v4-flash
+  maxTokens: 32768
+  temperature: 0.3
+  baseUrl: https://api.deepseek.com/v1
+context:
+  maxFiles: 100
+  maxTokens: 128000
+  autoDiscover: true
+  excludePatterns:
+    - node_modules/**
+    - dist/**
+    - .git/**
+    - '*.lock'
+    - '*.min.js'
+    - build/**
+agents:
+  family: full
+  orchestrate: true
+  reviewRequired: true
+  autoApply: false
+bmad:
+  enabled: true
+  templatesPath: .didev/bmad/templates
+  linkIssues: false
+output:
+  style: fancy
+  color: true
+  saveSessions: true
+mcp:
+  servers:
+    - name: java-vuln
+      command: node
+      args:
+        - /Users/andrei/.didev/mcp/java-vuln-remediation/dist/index.js
+      enabled: true
+    - name: context7
+      command: npx
+      args:
+        - '-y'
+        - '@upstash/context7-mcp'
+      enabled: true
+    - name: pgs-tool
+      command: node
+      args:
+        - /Users/andrei/.didev/mcp/mcp-pgs-tool/dist/index.js
+      env:
+        DATABASE_URL: ${DATABASE_URL}
+      enabled: false
+    - name: atlassian
+      command: node
+      args:
+        - /Users/andrei/.didev/mcp/atlassian-mcp/dist/index.js
+      env:
+        ATLASSIAN_API_TOKEN: ${ATLASSIAN_API_TOKEN}
+        ATLASSIAN_BASE_URL: ${ATLASSIAN_BASE_URL}
+        ATLASSIAN_EMAIL: ${ATLASSIAN_EMAIL}
+      enabled: false
