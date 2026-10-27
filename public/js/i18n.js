@@ -72,6 +72,14 @@ const LOCALES = {
     'btn.leaderboard': '🏆 Таблица лидеров',
     'btn.settings': '⚙️ Настройки',
     'btn.arrows': '↕ Стрелки',
+    'btn.admin': 'Админ-панель',
+    'auth.session_check_failed': 'Не удалось проверить сессию. Обновите страницу.',
+    'auth.password_placeholder': 'мин. 6',
+    'unit.seconds_short': 'с',
+    'sound.mute': 'Выключить звук',
+    'sound.unmute': 'Включить звук',
+    'title.reset_progress': 'Сбросить прогресс',
+    'title.layout_toggle': 'Переключить раскладку (Alt+Shift)',
     'btn.start': '🚀 Старт',
     'btn.back': '← Назад',
     'btn.next_text': 'Следующий текст →',
@@ -259,6 +267,14 @@ const LOCALES = {
     'btn.leaderboard': '🏆 Leaderboard',
     'btn.settings': '⚙️ Settings',
     'btn.arrows': '↕ Arrows',
+    'btn.admin': 'Admin Panel',
+    'auth.session_check_failed': 'Could not verify your session. Please reload the page.',
+    'auth.password_placeholder': 'min. 6',
+    'unit.seconds_short': 's',
+    'sound.mute': 'Mute sound',
+    'sound.unmute': 'Unmute sound',
+    'title.reset_progress': 'Reset progress',
+    'title.layout_toggle': 'Switch layout (Alt+Shift)',
     'btn.start': '🚀 Start',
     'btn.back': '← Back',
     'btn.next_text': 'Next Text →',
@@ -454,6 +470,11 @@ export function applyLanguageToDOM() {
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
     const key = el.dataset.i18nPlaceholder;
     el.placeholder = t(key);
+  });
+
+  // Update tooltips
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    el.title = t(el.dataset.i18nTitle);
   });
 
   // Update text-display overlay hint (data-hint-text)

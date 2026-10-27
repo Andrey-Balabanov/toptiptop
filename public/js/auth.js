@@ -10,6 +10,11 @@ export function setAuthChangeCallback(cb) {
   onAuthChange = cb;
 }
 
+/* The bar's innerHTML is replaced on every render; let main.js re-add what it owns (mute button) */
+function notifyAuthBarRendered() {
+  window.dispatchEvent(new CustomEvent('auth-bar-rendered'));
+}
+
 /* Render auth bar - progress/achievements are always visible for all users */
 export function renderAuthBar() {
   const bar = document.getElementById('auth-bar');
@@ -20,10 +25,11 @@ export function renderAuthBar() {
       .then(user => {
         bar.innerHTML = `
           <span class="username">${escapeHtml(user.username)}</span>
-          ${user.role === 'admin' ? '<button class="small" id="btn-admin">Админ-панель</button>' : ''}
-          <button class="theme-btn" id="btn-theme" title="${t('label.theme')}">🌙/☀️</button>
-          <button class="small" id="btn-logout">${t('auth.logout')}</button>
+          ${user.role === 'admin' ? `<button class="small" id="btn-admin" data-i18n="btn.admin">${t('btn.admin')}</button>` : ''}
+          <button class="theme-btn" id="btn-theme" data-i18n-title="label.theme" title="${t('label.theme')}">🌙/☀️</button>
+          <button class="small" id="btn-logout" data-i18n="auth.logout">${t('auth.logout')}</button>
         `;
+        notifyAuthBarRendered();
         applyLanguageToDOM();
 
         const adminBtn = document.getElementById('btn-admin');
@@ -51,7 +57,8 @@ export function renderAuthBar() {
       })
       .catch(() => {
         if (api.isLoggedIn()) {
-          bar.textContent = 'Не удалось проверить сессию. Обновите страницу.';
+          bar.textContent = t('auth.session_check_failed');
+          notifyAuthBarRendered();
           return;
         }
         renderGuestBar();
@@ -69,10 +76,11 @@ function renderGuestBar() {
   const bar = document.getElementById('auth-bar');
   if (!bar) return;
   bar.innerHTML = `
-    <button class="theme-btn" id="btn-theme" title="${t('label.theme')}">🌙/☀️</button>
-    <button class="small" id="btn-login">${t('auth.login')}</button>
-    <button class="small" id="btn-register">${t('auth.register')}</button>
+    <button class="theme-btn" id="btn-theme" data-i18n-title="label.theme" title="${t('label.theme')}">🌙/☀️</button>
+    <button class="small" id="btn-login" data-i18n="auth.login">${t('auth.login')}</button>
+    <button class="small" id="btn-register" data-i18n="auth.register">${t('auth.register')}</button>
   `;
+  notifyAuthBarRendered();
   applyLanguageToDOM();
 
   // Theme toggle
@@ -110,6 +118,7 @@ function addSidebarButtons(user) {
   // Arrow toggle — use full translated label (e.g. "↕ Arrows" / "↕ Стрелки")
   const arrowBtn = document.createElement('button');
   arrowBtn.className = 'small';
+  arrowBtn.dataset.i18n = 'btn.arrows';
   arrowBtn.textContent = t('btn.arrows');
   const showArrows = localStorage.getItem('toptip-show-arrows') !== 'false';
   if (showArrows) arrowBtn.classList.add('active');
@@ -126,6 +135,7 @@ function addSidebarButtons(user) {
   if (api.isLoggedIn()) {
     const histBtn = document.createElement('button');
     histBtn.className = 'small';
+    histBtn.dataset.i18n = 'btn.history';
     histBtn.textContent = t('btn.history');
     histBtn.onclick = () => toggleHistory();
     group.appendChild(histBtn);
@@ -133,6 +143,7 @@ function addSidebarButtons(user) {
     // Leaderboard button — text from i18n already includes 🏆
     const lbBtn = document.createElement('button');
     lbBtn.className = 'small';
+    lbBtn.dataset.i18n = 'btn.leaderboard';
     lbBtn.textContent = t('btn.leaderboard');
     lbBtn.onclick = () => toggleLeaderboard();
     group.appendChild(lbBtn);
@@ -141,6 +152,7 @@ function addSidebarButtons(user) {
   // Settings button — shown for ALL users (guests get guest settings modal)
   const settingsBtn = document.createElement('button');
   settingsBtn.className = 'small';
+  settingsBtn.dataset.i18n = 'btn.settings';
   settingsBtn.textContent = t('btn.settings');
   settingsBtn.onclick = () => {
     if (api.isLoggedIn() && user) {
@@ -372,7 +384,7 @@ export function showAuthModal(mode = 'login') {
       <label>${t('auth.email')}</label>
       <input type="email" id="auth-email" placeholder="your@email.com" autocomplete="email">
       <label>${t('auth.password')}</label>
-      <input type="password" id="auth-password" placeholder="мин. 6" autocomplete="${mode === 'register' ? 'new-password' : 'current-password'}">
+      <input type="password" id="auth-password" placeholder="${t('auth.password_placeholder')}" data-i18n-placeholder="auth.password_placeholder" autocomplete="${mode === 'register' ? 'new-password' : 'current-password'}">
       <div class="modal-actions">
         <button class="ghost-btn" id="auth-cancel">${t('auth.cancel')}</button>
         <button class="primary-btn" id="auth-submit">${mode === 'login' ? t('auth.submit_login') : t('auth.submit_register')}</button>
@@ -551,7 +563,7 @@ function showCodeVerification(email, result) {
       let countdown = 60;
       resendTimer = setInterval(() => {
         countdown--;
-        resendBtn.textContent = '⏳ ' + countdown + 'с';
+        resendBtn.textContent = '⏳ ' + countdown + t('unit.seconds_short');
         if (countdown <= 0) {
           clearInterval(resendTimer);
           resendTimer = null;

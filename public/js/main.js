@@ -1138,20 +1138,22 @@ function initMuteButton() {
   const btn = document.createElement('button');
   btn.id = 'mute-btn';
   btn.className = 'mute-btn';
-  btn.textContent = sound.isMuted() ? '🔇' : '🔊';
-  btn.title = sound.isMuted() ? 'Выключить звук' : 'Включить звук';
-  btn.onclick = () => {
-    const muted = sound.toggleMuted();
+  const setMuteLabel = muted => {
     btn.textContent = muted ? '🔇' : '🔊';
-    btn.title = muted ? 'Включить звук' : 'Выключить звук';
+    btn.dataset.i18nTitle = muted ? 'sound.unmute' : 'sound.mute';
+    btn.title = t(btn.dataset.i18nTitle);
   };
+  setMuteLabel(sound.isMuted());
+  btn.onclick = () => setMuteLabel(sound.toggleMuted());
   bar.prepend(btn);
 }
+
+// auth.js rebuilds the bar (login, logout, settings save), which removes the button
+window.addEventListener('auth-bar-rendered', initMuteButton);
 
 /* ============ INITIALIZATION ============ */
 
 function init() {
-  initMuteButton();
   buildKeyboardLayoutSelector();
   renderAuthBar();
   updateHeader();
