@@ -93,17 +93,15 @@ app.use('/api/auth/resend-code', registerLimiter);
 app.use('/api', generalLimiter);
 
 // Serve static files from public/.
-// JS/CSS assets get a short browser cache (they are only rebuilt on deploy);
-// index.html keeps default revalidation via ETag so the SPA entry is never stale.
+// JS/CSS assets always revalidate via ETag (cheap 304s) so a deploy never mixes
+// new JS with a stale stylesheet; index.html keeps default ETag revalidation too.
 const publicDir = path.resolve(__dirname, 'public');
 app.use(express.static(publicDir, {
   etag: true,
   setHeaders(res, filePath) {
     const ext = path.extname(filePath).toLowerCase();
-    if (ext === '.js') {
+    if (ext === '.js' || ext === '.css') {
       res.setHeader('Cache-Control', 'no-cache');
-    } else if (ext === '.css') {
-      res.setHeader('Cache-Control', 'public, max-age=3600');
     }
   },
 }));

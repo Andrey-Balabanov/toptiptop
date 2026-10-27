@@ -532,8 +532,23 @@ function render() {
     textEl.appendChild(span);
   }
   renderTypeLine();
+  if (fittedText !== state.text) fitTextToFrame();
   updateNext();
 }
+
+/* Shrink the top text's font until it fits its fixed-height frame (never grows the frame) */
+let fittedText = null;
+function fitTextToFrame() {
+  textEl.style.fontSize = '';
+  if (!state || textEl.clientHeight === 0) { fittedText = null; return; }
+  let size = parseFloat(getComputedStyle(textEl).fontSize);
+  while (textEl.scrollHeight > textEl.clientHeight + 1 && size > 10) {
+    size = Math.max(10, size * 0.92);
+    textEl.style.fontSize = size + 'px';
+  }
+  fittedText = state.text;
+}
+new ResizeObserver(() => fitTextToFrame()).observe(textEl);
 
 /* Single-line strip above the keyboard: typed text on the left, cursor + upcoming on the right */
 const TYPE_LINE_SPAN = 40;

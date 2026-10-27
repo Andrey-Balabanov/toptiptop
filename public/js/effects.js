@@ -4,6 +4,17 @@ import { t } from './i18n.js';
 
 const GIFTS = ['🎁','🌟','⭐','✨','💎','🏆','🎯','⚡','🔥','💫','🎊','🎉','🍭','🎈'];
 
+/* All effects live in one viewport-sized, clipped layer so they can never resize or shift the page */
+let fxLayer = null;
+function layer() {
+  if (!fxLayer || !fxLayer.isConnected) {
+    fxLayer = document.createElement('div');
+    fxLayer.className = 'fx-layer';
+    document.body.appendChild(fxLayer);
+  }
+  return fxLayer;
+}
+
 export function showParticle(x, y, text, color) {
   const p = document.createElement('div');
   p.className = 'particle';
@@ -11,7 +22,7 @@ export function showParticle(x, y, text, color) {
   p.style.left = x + 'px';
   p.style.top = y + 'px';
   p.style.color = color;
-  document.body.appendChild(p);
+  layer().appendChild(p);
   setTimeout(() => p.remove(), 950);
 }
 
@@ -30,7 +41,7 @@ export function showSparks(x, y, color, count = 6) {
        { transform: `translate(${dx}px,${dy}px) scale(0)`, opacity: 0 }],
       { duration: 600, easing: 'ease-out' }
     );
-    document.body.appendChild(s);
+    layer().appendChild(s);
     setTimeout(() => s.remove(), 600);
   }
 }
@@ -43,7 +54,7 @@ export function flyGift(streak) {
       g.className = 'gift';
       g.textContent = GIFTS[Math.floor(Math.random() * GIFTS.length)];
       g.style.left = (Math.random() * 80 + 10) + 'vw';
-      document.body.appendChild(g);
+      layer().appendChild(g);
       setTimeout(() => g.remove(), 2600);
     }, i * 180);
   }
@@ -54,20 +65,20 @@ export function showBigComboText(streak) {
   el.className = 'combo-text';
   el.style.color = '#e0af68';
   el.innerHTML = t('effect.combo_text').replace('{streak}', streak);
-  document.body.appendChild(el);
+  layer().appendChild(el);
   setTimeout(() => el.remove(), 1400);
 }
 
 export function triggerLevelUpEffect(newLevel, levelTitle) {
   const flash = document.createElement('div');
   flash.className = 'flash';
-  document.body.appendChild(flash);
+  layer().appendChild(flash);
   setTimeout(() => flash.remove(), 800);
 
   const banner = document.createElement('div');
   banner.className = 'level-up-banner';
   banner.innerHTML = `${t('effect.level_up')} ${newLevel}!<br><span style="font-size:15px;font-weight:500;">${levelTitle}</span>`;
-  document.body.appendChild(banner);
+  layer().appendChild(banner);
   setTimeout(() => banner.remove(), 2500);
 
   for (let i = 0; i < 6; i++) setTimeout(() => flyGift(60), i * 130);
@@ -85,6 +96,6 @@ export function showAchievementToast(icon, name, desc) {
         <div class="toast-desc">${desc}</div>
       </div>
     </div>`;
-  document.body.appendChild(t2);
+  layer().appendChild(t2);
   setTimeout(() => t2.remove(), 4500);
 }
