@@ -254,7 +254,7 @@ function getUserById(userId) {
   const user = db.prepare(
     `SELECT id, username, email, email_verified, language, profile, keyboard_layout,
             total_xp, best_wpm, best_streak, session_count, created_at,
-            role, is_banned
+            role, is_banned, achievements, total_chars
      FROM users WHERE id = ?`
   ).get(userId);
   if (!user) return null;
@@ -288,7 +288,34 @@ function updateUserStats(userId, newXp, newWpm, newStreak) {
   `).run(newXp, newWpm, newStreak, userId);
 }
 
+/**
+ * Merge client progress into the account: achievements are unioned (keeping the
+ * earliest unlock time) and total_chars only ever grows. Returns the merged result.
+ */
+function mergeUserProgress(userId, achievements, totalChars) {
+  const db = getDb();
+  const row = db.prepare('SELECT achievements, total_chars FROM users WHERE id = ?').get(userId);
+  if (!row) return null;
+  const merged = parseAchievements(row.achievements);
+  for (const [id, unlockedAt] of Object.entries(achievements || {})) {
+    merged[id] = merged[id] ? Math.min(merged[id], unlockedAt) : unlockedAt;
+  }
+  const chars = Math.max(row.total_chars || 0, totalChars || 0);
+  db.prepare('UPDATE users SET achievements = ?, total_chars = ? WHERE id = ?')
+    .run(JSON.stringify(merged), chars, userId);
+  return { achievements: merged, totalChars: chars };
+}
+
 /* ============ Helpers ============ */
+
+function parseAchievements(raw) {
+  try {
+    const parsed = JSON.parse(raw || '{}');
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
 
 function formatUser(row) {
   return {
@@ -303,6 +330,8 @@ function formatUser(row) {
     bestWpm: row.best_wpm,
     bestStreak: row.best_streak,
     sessionCount: row.session_count,
+    achievements: parseAchievements(row.achievements),
+    totalChars: row.total_chars || 0,
     role: row.role || 'user',
     isBanned: !!row.is_banned,
     createdAt: row.created_at,
@@ -332,4 +361,5 @@ module.exports = {
   updateUserProfile,
   updateUserKeyboardLayout,
   updateUserStats,
+  mergeUserProgress,
 };

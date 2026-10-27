@@ -167,6 +167,10 @@ export function updateKeyboardLayout(layout) {
   return request('PATCH', '/users/me/keyboard', { layout });
 }
 
+export function updateProgress(data) {
+  return request('PATCH', '/users/me/progress', data);
+}
+
 /* Session endpoints */
 export function saveSession(data) {
   return request('POST', '/sessions', data);

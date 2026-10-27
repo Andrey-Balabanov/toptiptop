@@ -58,6 +58,15 @@ export function saveProgress() {
   } catch {}
 }
 
+/* Logged-in users: store achievements + total chars on the account so they survive logout */
+function pushProgressToServer() {
+  if (!api.isLoggedIn()) return;
+  api.updateProgress({
+    achievements: progress.achievements,
+    totalChars: progress.totalChars,
+  }).catch(() => {});
+}
+
 export function getProgress() {
   return progress;
 }
@@ -196,6 +205,7 @@ export function checkAchievements() {
   unlocked.forEach(a => {
     if (onAchievement) onAchievement(a);
   });
+  if (unlocked.length > 0) pushProgressToServer();
   return unlocked;
 }
 
@@ -205,7 +215,7 @@ export function finishSession(wpm, mode) {
   progress.sessions++;
   awardXp(xpEarned);
   saveProgress();
-  checkAchievements();
+  if (checkAchievements().length === 0) pushProgressToServer();
   return xpEarned;
 }
 
@@ -221,27 +231,34 @@ export function initFromServer(userData) {
   // Restore the locally persisted progress first. Authenticated users do not
   // call init(), so without this step a page reload starts from an empty state.
   const storedProgress = loadProgress();
-  const localAchievements = {
+  const serverAchievements = userData.achievements || {};
+  const mergedAchievements = {
     ...(storedProgress.achievements || {}),
     ...(progress.achievements || {}),
+    ...serverAchievements,
   };
+  const serverChars = userData.totalChars || 0;
 
-  // Server data is authoritative for account-wide statistics, while local
-  // achievements and total character count remain available until the server
-  // has dedicated fields for them.
+  // Server data is authoritative for account-wide statistics; achievements and
+  // total characters are merged (local ones earned as a guest are kept too).
   progress.totalChars = Math.max(
     storedProgress.totalChars || 0,
     progress.totalChars || 0,
+    serverChars,
   );
   progress.xp = userData.totalXp || 0;
   progress.bestStreak = userData.bestStreak || 0;
   progress.bestWpm = userData.bestWpm || 0;
   progress.sessions = userData.sessionCount || 0;
-  progress.achievements = localAchievements;
+  progress.achievements = mergedAchievements;
 
   initialized = true;
   saveProgress();
-  // Re-check achievements against server stats
-  checkAchievements();
+  // Re-check achievements against server stats; upload anything the account doesn't have yet
+  const unlocked = checkAchievements();
+  const serverMissing = Object.keys(mergedAchievements).some(id => !serverAchievements[id]);
+  if (unlocked.length === 0 && (serverMissing || progress.totalChars > serverChars)) {
+    pushProgressToServer();
+  }
   if (onXpChange) onXpChange();
 }

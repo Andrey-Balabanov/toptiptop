@@ -5,12 +5,15 @@ const {
   updateUserLanguage,
   updateUserProfile,
   updateUserKeyboardLayout,
+  mergeUserProgress,
 } = require('../services/auth');
 const { getLeaderboard } = require('../services/sessions');
 
 const router = Router();
 
 const VALID_KEYBOARD_LAYOUTS = ['pc-ansi', 'pc-iso', 'mac-ansi', 'mac-iso'];
+const ACHIEVEMENT_ID = /^[a-z0-9-]{1,40}$/;
+const MAX_ACHIEVEMENTS = 200;
 
 // Get current user profile
 router.get('/me', authMiddleware, (req, res) => {
@@ -70,6 +73,29 @@ router.patch('/me/keyboard', authMiddleware, (req, res) => {
   } catch (err) {
     console.error('Update keyboard layout error:', err);
     res.status(500).json({ error: 'Ошибка обновления раскладки клавиатуры' });
+  }
+});
+
+// Merge achievements / total characters into the account (union, never removes)
+router.patch('/me/progress', authMiddleware, (req, res) => {
+  try {
+    const { achievements = {}, totalChars = 0 } = req.body || {};
+    const entries = achievements && typeof achievements === 'object' && !Array.isArray(achievements)
+      ? Object.entries(achievements)
+      : null;
+    if (!entries || entries.length > MAX_ACHIEVEMENTS ||
+        !entries.every(([id, ts]) => ACHIEVEMENT_ID.test(id) && Number.isFinite(ts) && ts > 0)) {
+      return res.status(400).json({ error: 'Некорректные достижения' });
+    }
+    if (!Number.isInteger(totalChars) || totalChars < 0) {
+      return res.status(400).json({ error: 'Некорректное число символов' });
+    }
+    const result = mergeUserProgress(req.user.id, achievements, totalChars);
+    if (!result) return res.status(404).json({ error: 'Пользователь не найден' });
+    res.json(result);
+  } catch (err) {
+    console.error('Update progress error:', err);
+    res.status(500).json({ error: 'Ошибка сохранения прогресса' });
   }
 });
 

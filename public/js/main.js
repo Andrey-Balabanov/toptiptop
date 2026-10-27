@@ -633,6 +633,8 @@ function reset() {
   const length = $('length').value;
   const lang = modeToLang(mode);
   state = createState(buildText(mode, length, currentProfile, lang));
+  // XP before this text: the server gets everything earned during it (chars, combos, completion)
+  state.xpAtStart = progress.getProgress().xp;
 
   // Detect if the text contains mixed languages
   const detected = detectMixedLanguage(state.text);
@@ -775,7 +777,7 @@ async function finishSession() {
         wpm,
         accuracy,
         totalErrors: state.totalErrors,
-        xpEarned,
+        xpEarned: Math.max(0, progress.getProgress().xp - state.xpAtStart),
         durationMs: elapsed,
         textLength: state.text.length,
         streakMax: progress.getProgress().bestStreak,
@@ -1030,8 +1032,10 @@ setAuthChangeCallback(() => {
 
 /* ============ AUTH EVENTS ============ */
 
+let wasLoggedIn = false;
 window.addEventListener('auth-login', (e) => {
   const user = e.detail.user;
+  wasLoggedIn = true;
 
   // Reload progress from server
   progress.initFromServer(user);
@@ -1062,7 +1066,12 @@ window.addEventListener('auth-login', (e) => {
 });
 
 window.addEventListener('auth-logout', () => {
-  progress.resetProgress();
+  // auth-logout also fires on every guest page load: only wipe local progress when a
+  // logged-in user actually logs out (their achievements live on the server now)
+  if (wasLoggedIn) {
+    wasLoggedIn = false;
+    progress.resetProgress();
+  }
   currentProfile = 'general';
   updateHeader();
   renderAchievements();

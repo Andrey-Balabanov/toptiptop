@@ -112,6 +112,13 @@ function migrate() {
   if (!columns.includes('banned_at')) {
     db.exec("ALTER TABLE users ADD COLUMN banned_at DATETIME");
   }
+  // Account-wide progress that used to live only in the browser's localStorage
+  if (!columns.includes('achievements')) {
+    db.exec("ALTER TABLE users ADD COLUMN achievements TEXT DEFAULT '{}'");
+  }
+  if (!columns.includes('total_chars')) {
+    db.exec("ALTER TABLE users ADD COLUMN total_chars INTEGER DEFAULT 0");
+  }
 
   // Opportunistic cleanup: expired or already-used verification codes are dead
   // weight. Prune them on startup so the table never grows without bound
