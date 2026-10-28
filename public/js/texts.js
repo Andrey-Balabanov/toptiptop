@@ -613,5 +613,5 @@ function getProfileLabel(language, profile) {
 export {
   TEXTS, CODE_TEXTS, DRILLS, LENGTH_MULT, PROFILES,
   PROFILE_LABELS, buildText, modeToLang, getProfileLabel,
-  buildAdaptiveText, weakLetters, pickDistinct,
+  buildAdaptiveText, weakLetters, pickDistinct, wordPool, genDrill,
 };

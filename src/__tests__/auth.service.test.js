@@ -271,6 +271,7 @@ describe('auth service', () => {
         achievements: {},
         totalChars: 0,
         keyStats: {},
+        course: {},
         role: 'user',
         isBanned: false,
         createdAt: '2024-06-01',

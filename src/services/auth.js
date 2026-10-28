@@ -254,7 +254,7 @@ function getUserById(userId) {
   const user = db.prepare(
     `SELECT id, username, email, email_verified, language, profile, keyboard_layout,
             total_xp, best_wpm, best_streak, session_count, created_at,
-            role, is_banned, achievements, total_chars, key_stats
+            role, is_banned, achievements, total_chars, key_stats, course
      FROM users WHERE id = ?`
   ).get(userId);
   if (!user) return null;
@@ -292,9 +292,25 @@ function updateUserStats(userId, newXp, newWpm, newStreak) {
  * Merge client progress into the account: achievements are unioned (keeping the
  * earliest unlock time) and total_chars only ever grows. Returns the merged result.
  */
-function mergeUserProgress(userId, achievements, totalChars, keyStats = {}) {
+/** Course progress: the furthest passed lesson and the best result per lesson win (mirrors course.js). */
+function mergeCourse(a = {}, b = {}) {
+  const out = {};
+  for (const language of new Set([...Object.keys(a), ...Object.keys(b)])) {
+    const x = a[language] || {};
+    const y = b[language] || {};
+    const best = { ...(x.best || {}) };
+    for (const [i, r] of Object.entries(y.best || {})) {
+      const cur = best[i] || { wpm: 0, accuracy: 0 };
+      best[i] = { wpm: Math.max(cur.wpm, r.wpm), accuracy: Math.max(cur.accuracy, r.accuracy) };
+    }
+    out[language] = { passed: Math.max(x.passed || 0, y.passed || 0), best };
+  }
+  return out;
+}
+
+function mergeUserProgress(userId, achievements, totalChars, keyStats = {}, course = {}) {
   const db = getDb();
-  const row = db.prepare('SELECT achievements, total_chars, key_stats FROM users WHERE id = ?').get(userId);
+  const row = db.prepare('SELECT achievements, total_chars, key_stats, course FROM users WHERE id = ?').get(userId);
   if (!row) return null;
   const merged = parseJsonObject(row.achievements);
   for (const [id, unlockedAt] of Object.entries(achievements || {})) {
@@ -307,9 +323,10 @@ function mergeUserProgress(userId, achievements, totalChars, keyStats = {}) {
     const cur = stats[key] || { h: 0, m: 0 };
     stats[key] = { h: Math.max(cur.h, s.h), m: Math.max(cur.m, s.m) };
   }
-  db.prepare('UPDATE users SET achievements = ?, total_chars = ?, key_stats = ? WHERE id = ?')
-    .run(JSON.stringify(merged), chars, JSON.stringify(stats), userId);
-  return { achievements: merged, totalChars: chars, keyStats: stats };
+  const mergedCourse = mergeCourse(parseJsonObject(row.course), course);
+  db.prepare('UPDATE users SET achievements = ?, total_chars = ?, key_stats = ?, course = ? WHERE id = ?')
+    .run(JSON.stringify(merged), chars, JSON.stringify(stats), JSON.stringify(mergedCourse), userId);
+  return { achievements: merged, totalChars: chars, keyStats: stats, course: mergedCourse };
 }
 
 /* ============ Helpers ============ */
@@ -339,6 +356,7 @@ function formatUser(row) {
     achievements: parseJsonObject(row.achievements),
     totalChars: row.total_chars || 0,
     keyStats: parseJsonObject(row.key_stats),
+    course: parseJsonObject(row.course),
     role: row.role || 'user',
     isBanned: !!row.is_banned,
     createdAt: row.created_at,

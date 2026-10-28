@@ -2,6 +2,7 @@
 
 import { FINGER_NAMES, refreshFingerNames, fingerFor, fingerMovement, homeKeyForFinger, createState } from './state.js';
 import { buildText, modeToLang, buildAdaptiveText } from './texts.js';
+import { getLessons, buildLessonText, currentLessonIndex, recordLessonResult } from './course.js';
 import * as sound from './sound.js';
 import * as effects from './effects.js';
 import * as progress from './progress.js';
@@ -658,6 +659,36 @@ function updateStats() {
   return wpm;
 }
 
+/* ============ COURSE ============ */
+
+function lessonLabel(lesson) {
+  return lesson.keys ? [...lesson.keys].join(' ') : t('course.special.' + lesson.special);
+}
+
+/** Show the lesson picker in course modes; lessons not unlocked yet are disabled. */
+function refreshLessonSelect() {
+  const select = $('course-lesson');
+  if (!select) return;
+  const mode = $('mode').value;
+  const isCourse = mode.startsWith('course-');
+  select.classList.toggle('hidden', !isCourse);
+  if (!isCourse) return;
+  const lang = modeToLang(mode);
+  const lessons = getLessons(lang);
+  const unlocked = currentLessonIndex(progress.getCourse(), lang);
+  const prev = select.dataset.lang === lang ? Number(select.value) : NaN;
+  select.innerHTML = '';
+  lessons.forEach((lesson, i) => {
+    const opt = document.createElement('option');
+    opt.value = String(i);
+    opt.textContent = `${i < unlocked ? '✓' : (i === unlocked ? '▶' : '🔒')} ${t('course.lesson')} ${i + 1}: ${lessonLabel(lesson)}`;
+    opt.disabled = i > unlocked;
+    select.appendChild(opt);
+  });
+  select.dataset.lang = lang;
+  select.value = String(Number.isInteger(prev) && prev <= unlocked ? prev : unlocked);
+}
+
 /* One-line note above the text (e.g. which weak letters an adaptive lesson trains) */
 function setLessonInfo(html) {
   const el = $('lesson-info');
@@ -677,7 +708,16 @@ function reset() {
   const lang = modeToLang(mode);
   let lessonInfo = '';
   let text;
-  if (mode.startsWith('adaptive-')) {
+  let courseLesson = null;
+  if (mode.startsWith('course-')) {
+    const lessons = getLessons(lang);
+    courseLesson = Number($('course-lesson').value);
+    if (!Number.isInteger(courseLesson)) courseLesson = currentLessonIndex(progress.getCourse(), lang);
+    const lesson = lessons[courseLesson];
+    text = buildLessonText(lang, courseLesson, length);
+    lessonInfo = `${t('course.lesson')} ${courseLesson + 1}/${lessons.length}: <b>${lessonLabel(lesson)}</b> · ` +
+      `${t('course.target')} ${lesson.accuracy}% · ${lesson.wpm} WPM`;
+  } else if (mode.startsWith('adaptive-')) {
     const lesson = buildAdaptiveText(lang, length, progress.getKeyStats());
     text = lesson.text;
     lessonInfo = lesson.weak.length
@@ -687,6 +727,7 @@ function reset() {
     text = buildText(mode, length, currentProfile, lang);
   }
   state = createState(text);
+  state.courseLesson = courseLesson;
   setLessonInfo(lessonInfo);
   // XP before this text: the server gets everything earned during it (chars, combos, completion)
   state.xpAtStart = progress.getProgress().xp;
@@ -825,6 +866,8 @@ async function finishSession() {
   updateHeader();
   renderAchievements();
 
+  showCourseResult(mode, wpm, accuracy);
+
   // Show completion overlay
   showCompletionOverlay(wpm, accuracy, wrongCount, xpEarned, elapsed);
 
@@ -868,6 +911,35 @@ function showCompletionOverlay(wpm, accuracy, errors, xp, elapsed) {
   if (cXp) cXp.textContent = '+ ' + xp;
 
   overlay.classList.remove('hidden');
+}
+
+/** Course lessons: record the attempt and say whether it passed / unlocked the next lesson. */
+function showCourseResult(mode, wpm, accuracy) {
+  const el = $('c-course');
+  if (!el) return;
+  if (state.courseLesson == null) {
+    el.classList.add('hidden');
+    return;
+  }
+  const lang = modeToLang(mode);
+  const r = recordLessonResult(progress.getCourse(), lang, state.courseLesson, wpm, accuracy);
+  progress.setCourse(r.progress);
+  const total = getLessons(lang).length;
+  if (r.unlocked && state.courseLesson + 1 < total) {
+    el.textContent = t('course.unlocked').replace('{n}', state.courseLesson + 2);
+  } else if (r.unlocked) {
+    el.textContent = t('course.finished');
+  } else if (r.passed) {
+    el.textContent = t('course.passed');
+  } else {
+    el.textContent = t('course.failed')
+      .replace('{acc}', r.target.accuracy).replace('{wpm}', r.target.wpm);
+  }
+  el.classList.toggle('fail', !r.passed);
+  el.classList.remove('hidden');
+  // "Next text" continues with the next lesson once it is unlocked
+  refreshLessonSelect();
+  if (r.unlocked && state.courseLesson + 1 < total) $('course-lesson').value = String(state.courseLesson + 1);
 }
 
 function hideCompletionOverlay() {
@@ -1110,6 +1182,7 @@ window.addEventListener('auth-login', (e) => {
   progress.initFromServer(user);
   updateHeader();
   renderAchievements();
+  refreshLessonSelect();
 
   // Apply user language & profile
   if (user.language) {
@@ -1311,12 +1384,23 @@ function init() {
   const lengthSelect = $('length');
   if (modeSelect) {
     modeSelect.addEventListener('change', () => {
+      refreshLessonSelect();
       if (document.querySelector('.app.focus-mode')) {
         reset();
         textEl.focus();
       }
     });
   }
+  const lessonSelect = $('course-lesson');
+  if (lessonSelect) {
+    lessonSelect.addEventListener('change', () => {
+      if (document.querySelector('.app.focus-mode')) {
+        reset();
+        textEl.focus();
+      }
+    });
+  }
+  refreshLessonSelect();
   if (lengthSelect) {
     lengthSelect.addEventListener('change', () => {
       if (document.querySelector('.app.focus-mode')) {

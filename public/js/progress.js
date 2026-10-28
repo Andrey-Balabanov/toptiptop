@@ -1,6 +1,7 @@
 /* XP, levels, achievements — progress persisted in localStorage for all users */
 
 import * as api from './api.js';
+import { mergeCourse } from './course.js';
 import { t } from './i18n.js';
 
 const STORAGE_KEY = 'toptip-progress-v1';
@@ -15,6 +16,8 @@ function defaultProgress() {
     achievements: {},
     // Per-letter hits / misses ({ 'ф': { h: 120, m: 7 } }) — drives adaptive lessons and the heatmap
     keyStats: {},
+    // Course progress per language: { ru: { passed: 3, best: { 0: { wpm, accuracy } } } }
+    course: {},
   };
 }
 
@@ -67,7 +70,19 @@ function pushProgressToServer() {
     achievements: progress.achievements,
     totalChars: progress.totalChars,
     keyStats: progress.keyStats,
+    course: progress.course,
   }).catch(() => {});
+}
+
+export function getCourse() {
+  return progress.course || {};
+}
+
+/** Store new course progress (after a lesson) locally and on the account. */
+export function setCourse(course) {
+  progress.course = course;
+  saveProgress();
+  pushProgressToServer();
 }
 
 /** Count a hit or miss for the expected character (letters, digits, punctuation; not whitespace). */
@@ -285,13 +300,16 @@ export function initFromServer(userData) {
   progress.keyStats = mergeKeyStats(storedProgress.keyStats, progress.keyStats, serverKeyStats);
   const keyStatsAhead = Object.entries(progress.keyStats).some(([k, s]) =>
     !serverKeyStats[k] || s.h > serverKeyStats[k].h || s.m > serverKeyStats[k].m);
+  const serverCourse = userData.course || {};
+  progress.course = mergeCourse(mergeCourse(storedProgress.course, progress.course), serverCourse);
+  const courseAhead = JSON.stringify(progress.course) !== JSON.stringify(mergeCourse(serverCourse, {}));
 
   initialized = true;
   saveProgress();
   // Re-check achievements against server stats; upload anything the account doesn't have yet
   const unlocked = checkAchievements();
   const serverMissing = Object.keys(mergedAchievements).some(id => !serverAchievements[id]);
-  if (unlocked.length === 0 && (serverMissing || keyStatsAhead || progress.totalChars > serverChars)) {
+  if (unlocked.length === 0 && (serverMissing || keyStatsAhead || courseAhead || progress.totalChars > serverChars)) {
     pushProgressToServer();
   }
   if (onXpChange) onXpChange();

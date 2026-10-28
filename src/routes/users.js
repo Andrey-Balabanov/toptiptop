@@ -16,6 +16,19 @@ const ACHIEVEMENT_ID = /^[a-z0-9-]{1,40}$/;
 const MAX_ACHIEVEMENTS = 200;
 const MAX_KEY_STATS = 300;
 const isCount = n => Number.isInteger(n) && n >= 0;
+const isPlainObject = o => !!o && typeof o === 'object' && !Array.isArray(o);
+
+/** { ru: { passed: 3, best: { '0': { wpm: 20, accuracy: 97 } } } } */
+function isValidCourse(course) {
+  if (!isPlainObject(course)) return false;
+  return Object.entries(course).every(([language, c]) =>
+    /^[a-z]{2}$/.test(language) && isPlainObject(c) &&
+    isCount(c.passed) && c.passed <= 100 && isPlainObject(c.best || {}) &&
+    Object.entries(c.best || {}).every(([i, r]) =>
+      /^\d{1,3}$/.test(i) && isPlainObject(r) &&
+      Number.isFinite(r.wpm) && r.wpm >= 0 && r.wpm <= 400 &&
+      Number.isFinite(r.accuracy) && r.accuracy >= 0 && r.accuracy <= 100));
+}
 
 // Get current user profile
 router.get('/me', authMiddleware, (req, res) => {
@@ -81,7 +94,7 @@ router.patch('/me/keyboard', authMiddleware, (req, res) => {
 // Merge achievements / total characters into the account (union, never removes)
 router.patch('/me/progress', authMiddleware, (req, res) => {
   try {
-    const { achievements = {}, totalChars = 0, keyStats = {} } = req.body || {};
+    const { achievements = {}, totalChars = 0, keyStats = {}, course = {} } = req.body || {};
     const entries = achievements && typeof achievements === 'object' && !Array.isArray(achievements)
       ? Object.entries(achievements)
       : null;
@@ -99,7 +112,10 @@ router.patch('/me/progress', authMiddleware, (req, res) => {
         !statEntries.every(([key, s]) => [...key].length === 1 && s && isCount(s.h) && isCount(s.m))) {
       return res.status(400).json({ error: 'Некорректная статистика клавиш' });
     }
-    const result = mergeUserProgress(req.user.id, achievements, totalChars, keyStats);
+    if (!isValidCourse(course)) {
+      return res.status(400).json({ error: 'Некорректный прогресс курса' });
+    }
+    const result = mergeUserProgress(req.user.id, achievements, totalChars, keyStats, course);
     if (!result) return res.status(404).json({ error: 'Пользователь не найден' });
     res.json(result);
   } catch (err) {

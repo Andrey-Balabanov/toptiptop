@@ -122,6 +122,9 @@ function migrate() {
   if (!columns.includes('key_stats')) {
     db.exec("ALTER TABLE users ADD COLUMN key_stats TEXT DEFAULT '{}'");
   }
+  if (!columns.includes('course')) {
+    db.exec("ALTER TABLE users ADD COLUMN course TEXT DEFAULT '{}'");
+  }
 
   // Opportunistic cleanup: expired or already-used verification codes are dead
   // weight. Prune them on startup so the table never grows without bound

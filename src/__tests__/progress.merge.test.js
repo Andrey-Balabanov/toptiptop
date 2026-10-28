@@ -46,8 +46,9 @@ describe('mergeUserProgress', () => {
       achievements: { 'first-text': 100, 'level-5': 300, 'streak-50': 700 },
       totalChars: 2000,
       keyStats: {},
+      course: {},
     });
-    expect(mockDb.run).toHaveBeenCalledWith(JSON.stringify(result.achievements), 2000, '{}', 1);
+    expect(mockDb.run).toHaveBeenCalledWith(JSON.stringify(result.achievements), 2000, '{}', '{}', 1);
   });
 
   it('treats missing or corrupt stored achievements as empty', () => {
@@ -55,7 +56,7 @@ describe('mergeUserProgress', () => {
 
     const result = mergeUserProgress(1, { 'first-text': 100 }, 50);
 
-    expect(result).toEqual({ achievements: { 'first-text': 100 }, totalChars: 50, keyStats: {} });
+    expect(result).toEqual({ achievements: { 'first-text': 100 }, totalChars: 50, keyStats: {}, course: {} });
   });
 
   it('merges per-letter stats keeping the larger count of each', () => {
@@ -71,6 +72,23 @@ describe('mergeUserProgress', () => {
       'а': { h: 50, m: 9 },
       'ы': { h: 10, m: 4 },
       'щ': { h: 3, m: 2 },
+    });
+  });
+
+  it('merges course progress: furthest lesson and best results win', () => {
+    mockDb.get.mockReturnValueOnce({
+      achievements: '{}', total_chars: 0, key_stats: '{}',
+      course: JSON.stringify({ ru: { passed: 3, best: { 0: { wpm: 20, accuracy: 96 } } } }),
+    });
+
+    const result = mergeUserProgress(1, {}, 0, {}, {
+      ru: { passed: 2, best: { 0: { wpm: 25, accuracy: 94 }, 1: { wpm: 18, accuracy: 99 } } },
+      en: { passed: 1, best: {} },
+    });
+
+    expect(result.course).toEqual({
+      ru: { passed: 3, best: { 0: { wpm: 25, accuracy: 96 }, 1: { wpm: 18, accuracy: 99 } } },
+      en: { passed: 1, best: {} },
     });
   });
 

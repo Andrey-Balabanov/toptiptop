@@ -714,6 +714,8 @@ kbd { background: var(--panel); padding: 2px 6px; border-radius: 3px; font-famil
 
 /* ============ COMPLETION OVERLAY ============ */
 .completion-overlay { position: fixed; inset: 0; background: var(--overlay); display: flex; align-items: center; justify-content: center; z-index: 300; animation: fadeIn 0.3s ease-out; }
+.completion-course { margin: 0 0 18px; padding: 10px 14px; border-radius: 10px; font-weight: 600; background: rgba(158,206,106,0.14); color: var(--correct); }
+.completion-course.fail { background: rgba(224,175,104,0.14); color: var(--cursor); }
 .completion-card { background: var(--panel); border-radius: 18px; padding: 36px 40px; width: 90%; max-width: 460px; box-shadow: 0 24px 80px var(--panel-shadow), 0 0 60px rgba(122,162,247,0.2); text-align: center; animation: cardSlideUp 0.4s ease-out; }
 @keyframes cardSlideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 .completion-title { font-size: 26px; font-weight: 700; color: var(--correct); margin-bottom: 24px; }

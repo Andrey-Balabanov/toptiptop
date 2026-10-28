@@ -71,6 +71,8 @@
   <div class="controls-row" id="controls">
     <button class="primary" id="reset" data-i18n="btn.new_text">Новый текст</button>
     <select id="mode">
+      <option value="course-ru" data-i18n="course.ru">Курс: русский</option>
+      <option value="course-en" data-i18n="course.en">Курс: английский</option>
       <option value="drill-home-ru" data-i18n="drill.home_ru">Упр: дом. ряд (рус)</option>
       <option value="drill-home-en" data-i18n="drill.home_en">Упр: home row (eng)</option>
       <option value="drill-top-ru" data-i18n="drill.top_ru">Упр: верхний ряд (рус)</option>
@@ -81,6 +83,7 @@
       <option value="en" data-i18n="text.en">Текст: английский</option>
       <option value="code" data-i18n="text.code">Текст: код</option>
     </select>
+    <select id="course-lesson" class="hidden"></select>
     <select id="length">
       <option value="short" data-i18n="label.short">Короткий</option>
       <option value="medium" selected data-i18n="label.medium">Средний</option>
@@ -172,6 +175,7 @@
         <span class="cstat-value" id="c-xp">+0</span>
       </div>
     </div>
+    <div class="completion-course hidden" id="c-course"></div>
     <div class="completion-actions">
       <button class="primary-btn" id="btn-next-text" data-i18n="btn.next_text">Следующий текст →</button>
       <button class="ghost-btn" id="btn-to-menu" data-i18n="btn.to_menu">В меню</button>
