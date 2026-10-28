@@ -667,6 +667,10 @@ function flashKey(ch, correct, combo) {
     el.classList.remove('correct-hit', 'wrong-hit', 'combo-hit');
     void el.offsetWidth;
     el.classList.add(combo ? 'combo-hit' : (correct ? 'correct-hit' : 'wrong-hit'));
+    // Drop the hit class once the animation is over (longest: comboHit 0.6s); otherwise
+    // the key keeps its "hit" look for good, e.g. a white finger pad instead of its colour
+    clearTimeout(el._hitTimer);
+    el._hitTimer = setTimeout(() => el.classList.remove('correct-hit', 'wrong-hit', 'combo-hit'), 650);
 
     const rect = el.getBoundingClientRect();
     const x = rect.left + rect.width / 2;
