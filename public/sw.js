@@ -5,13 +5,14 @@
  * API calls are never cached — progress made offline is queued by api.js.
  */
 
-const CACHE = 'toptiptop-v2';
+const CACHE = 'toptiptop-v3';
 const SHELL = [
   '/', '/css/style.css', '/manifest.webmanifest',
   '/js/main.js', '/js/api.js', '/js/auth.js', '/js/i18n.js', '/js/state.js', '/js/texts.js',
   '/js/progress.js', '/js/effects.js', '/js/sound.js', '/js/shift.js', '/js/arrows.js',
   '/js/course.js', '/js/daily.js', '/js/stats.js', '/js/onboarding.js', '/js/share.js',
   '/js/challenge.js', '/js/social.js', '/js/analytics.js',
+  '/js/keyboard.js', '/js/textView.js', '/js/menuWidgets.js',
   '/icons/icon-192.png', '/icons/icon-512.png',
 ];
 
