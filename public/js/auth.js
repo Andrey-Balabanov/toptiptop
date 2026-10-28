@@ -115,18 +115,20 @@ function addSidebarButtons(user) {
   group.id = 'sidebar-btn-group';
   group.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;';
 
-  // Arrow toggle — use full translated label (e.g. "↕ Arrows" / "↕ Стрелки")
+  // Arrow toggle — label and highlight show the state (e.g. "↕ Arrows: on" / "↕ Стрелки: выкл")
   const arrowBtn = document.createElement('button');
-  arrowBtn.className = 'small';
-  arrowBtn.dataset.i18n = 'btn.arrows';
-  arrowBtn.textContent = t('btn.arrows');
-  const showArrows = localStorage.getItem('toptip-show-arrows') !== 'false';
-  if (showArrows) arrowBtn.classList.add('active');
+  arrowBtn.className = 'small toggle';
+  const setArrowState = on => {
+    arrowBtn.classList.toggle('active', on);
+    arrowBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    arrowBtn.dataset.i18n = on ? 'btn.arrows_on' : 'btn.arrows_off';
+    arrowBtn.textContent = t(arrowBtn.dataset.i18n);
+  };
+  setArrowState(localStorage.getItem('toptip-show-arrows') !== 'false');
   arrowBtn.onclick = () => {
-    const current = localStorage.getItem('toptip-show-arrows') !== 'false';
-    const next = !current;
+    const next = localStorage.getItem('toptip-show-arrows') === 'false';
     localStorage.setItem('toptip-show-arrows', next ? 'true' : 'false');
-    arrowBtn.classList.toggle('active', next);
+    setArrowState(next);
     window.dispatchEvent(new CustomEvent('arrows-toggled', { detail: { show: next } }));
   };
   group.appendChild(arrowBtn);

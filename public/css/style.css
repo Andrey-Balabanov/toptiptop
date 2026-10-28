@@ -407,6 +407,12 @@ body {
   width: 100%;
 }
 #sidebar-btn-group button.small { font-size: 11px !important; padding: 5px 10px !important; flex: 0 1 auto; }
+/* On/off toggles (e.g. movement arrows): highlighted when on, dimmed when off */
+#sidebar-btn-group button.toggle { color: var(--dim); }
+#sidebar-btn-group button.toggle.active {
+  color: var(--accent); border-color: var(--accent);
+  background: rgba(122,162,247,0.14); font-weight: 600;
+}
 
 /* ============ START BUTTON ============ */
 .start-btn-wrap {
