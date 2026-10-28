@@ -1,7 +1,8 @@
 /* XP, levels, achievements — progress persisted in localStorage for all users */
 
 import * as api from './api.js';
-import { mergeCourse } from './course.js';
+import { mergeCourse, getLessons } from './course.js';
+import { normalizeDaily, recordText, mergeDaily, currentStreak as dailyStreak } from './daily.js';
 import { t } from './i18n.js';
 
 const STORAGE_KEY = 'toptip-progress-v1';
@@ -18,6 +19,10 @@ function defaultProgress() {
     keyStats: {},
     // Course progress per language: { ru: { passed: 3, best: { 0: { wpm, accuracy } } } }
     course: {},
+    // Daily goal & day streak (see daily.js)
+    daily: normalizeDaily(),
+    // Counters behind some achievements (only grow)
+    counters: { perfectTexts: 0, nightTexts: 0, morningTexts: 0 },
   };
 }
 
@@ -71,7 +76,20 @@ function pushProgressToServer() {
     totalChars: progress.totalChars,
     keyStats: progress.keyStats,
     course: progress.course,
+    daily: progress.daily,
+    counters: progress.counters,
   }).catch(() => {});
+}
+
+export function getDaily() {
+  return normalizeDaily(progress.daily);
+}
+
+/** Change the number of texts per day; the streak and today's count are kept. */
+export function setDailyGoal(goal) {
+  progress.daily = { ...normalizeDaily(progress.daily), goal };
+  saveProgress();
+  pushProgressToServer();
 }
 
 export function getCourse() {
@@ -159,7 +177,34 @@ const ACHIEVEMENT_DEFS = [
   { id:'level-10',    icon:'🌟', nameKey:'ach.level-10.name', descKey:'ach.level-10.desc', check:() => currentLevel().level >= 10 },
   { id:'level-20',    icon:'👑', nameKey:'ach.level-20.name', descKey:'ach.level-20.desc', check:() => currentLevel().level >= 20 },
   { id:'sessions-10', icon:'🎓', nameKey:'ach.sessions-10.name', descKey:'ach.sessions-10.desc', check:() => progress.sessions >= 10 },
+  { id:'sessions-50', icon:'🏅', nameKey:'ach.sessions-50.name', descKey:'ach.sessions-50.desc', check:() => progress.sessions >= 50 },
+  { id:'sessions-100', icon:'🏆', nameKey:'ach.sessions-100.name', descKey:'ach.sessions-100.desc', check:() => progress.sessions >= 100 },
+  { id:'chars-20000', icon:'🗂️', nameKey:'ach.chars-20000.name', descKey:'ach.chars-20000.desc', check:() => progress.totalChars >= 20000 },
+  { id:'chars-100000', icon:'🏛️', nameKey:'ach.chars-100000.name', descKey:'ach.chars-100000.desc', check:() => progress.totalChars >= 100000 },
+  { id:'speed-100',   icon:'🚀', nameKey:'ach.speed-100.name', descKey:'ach.speed-100.desc', check:() => progress.bestWpm >= 100 },
+  { id:'daily-3',     icon:'📆', nameKey:'ach.daily-3.name', descKey:'ach.daily-3.desc', check:() => normalizeDaily(progress.daily).best >= 3 },
+  { id:'daily-7',     icon:'🗓️', nameKey:'ach.daily-7.name', descKey:'ach.daily-7.desc', check:() => normalizeDaily(progress.daily).best >= 7 },
+  { id:'daily-30',    icon:'🌙', nameKey:'ach.daily-30.name', descKey:'ach.daily-30.desc', check:() => normalizeDaily(progress.daily).best >= 30 },
+  { id:'perfect-1',   icon:'💎', nameKey:'ach.perfect-1.name', descKey:'ach.perfect-1.desc', check:() => counter('perfectTexts') >= 1 },
+  { id:'perfect-10',  icon:'💠', nameKey:'ach.perfect-10.name', descKey:'ach.perfect-10.desc', check:() => counter('perfectTexts') >= 10 },
+  { id:'course-5',    icon:'🎒', nameKey:'ach.course-5.name', descKey:'ach.course-5.desc', check:() => coursePassedTotal() >= 5 },
+  { id:'course-done', icon:'🎖️', nameKey:'ach.course-done.name', descKey:'ach.course-done.desc', check:() => courseFinished() },
+  // Hidden until unlocked
+  { id:'night-owl',   icon:'🦉', hidden:true, nameKey:'ach.night-owl.name', descKey:'ach.night-owl.desc', check:() => counter('nightTexts') >= 1 },
+  { id:'early-bird',  icon:'🐦', hidden:true, nameKey:'ach.early-bird.name', descKey:'ach.early-bird.desc', check:() => counter('morningTexts') >= 1 },
 ];
+
+function counter(name) {
+  return (progress.counters && progress.counters[name]) || 0;
+}
+
+function coursePassedTotal() {
+  return Object.values(progress.course || {}).reduce((sum, c) => sum + (c.passed || 0), 0);
+}
+
+function courseFinished() {
+  return Object.entries(progress.course || {}).some(([lang, c]) => (c.passed || 0) >= getLessons(lang).length);
+}
 
 /** Build live achievement objects with current language translations */
 function buildAchievements() {
@@ -170,6 +215,7 @@ function buildAchievements() {
     descKey: a.descKey,
     name: t(a.nameKey),
     desc: t(a.descKey),
+    hidden: !!a.hidden,
     check: a.check,
   }));
 }
@@ -242,14 +288,31 @@ export function checkAchievements() {
   return unlocked;
 }
 
-export function finishSession(wpm, mode) {
+/**
+ * Count a finished text.
+ * @param {{ accuracy?: number, durationMs?: number, textLength?: number, now?: Date }} info
+ * @returns {{ xpEarned: number, goalReachedNow: boolean, streak: number }}
+ */
+export function finishSession(wpm, mode, info = {}) {
+  const now = info.now || new Date();
   const xpEarned = 20 + Math.round(wpm * 0.5);
   if (wpm > progress.bestWpm) progress.bestWpm = wpm;
   progress.sessions++;
+
+  const counters = { perfectTexts: 0, nightTexts: 0, morningTexts: 0, ...(progress.counters || {}) };
+  if (info.accuracy === 100 && (info.textLength || 0) >= 50) counters.perfectTexts++;
+  const hour = now.getHours();
+  if (hour < 5) counters.nightTexts++;
+  else if (hour < 8) counters.morningTexts++;
+  progress.counters = counters;
+
+  const daily = recordText(progress.daily, info.durationMs, now);
+  progress.daily = daily.daily;
+
   awardXp(xpEarned);
   saveProgress();
   if (checkAchievements().length === 0) pushProgressToServer();
-  return xpEarned;
+  return { xpEarned, goalReachedNow: daily.goalReachedNow, streak: dailyStreak(progress.daily, now) };
 }
 
 export function resetProgress() {
@@ -303,13 +366,24 @@ export function initFromServer(userData) {
   const serverCourse = userData.course || {};
   progress.course = mergeCourse(mergeCourse(storedProgress.course, progress.course), serverCourse);
   const courseAhead = JSON.stringify(progress.course) !== JSON.stringify(mergeCourse(serverCourse, {}));
+  const serverDaily = normalizeDaily(userData.daily);
+  progress.daily = mergeDaily(mergeDaily(storedProgress.daily, progress.daily), serverDaily);
+  const dailyAhead = JSON.stringify(progress.daily) !== JSON.stringify(mergeDaily(serverDaily, serverDaily));
+  const serverCounters = userData.counters || {};
+  const counters = { ...serverCounters };
+  for (const src of [storedProgress.counters, progress.counters]) {
+    for (const [k, v] of Object.entries(src || {})) counters[k] = Math.max(counters[k] || 0, v || 0);
+  }
+  progress.counters = counters;
+  const countersAhead = Object.entries(counters).some(([k, v]) => v > (serverCounters[k] || 0));
 
   initialized = true;
   saveProgress();
   // Re-check achievements against server stats; upload anything the account doesn't have yet
   const unlocked = checkAchievements();
   const serverMissing = Object.keys(mergedAchievements).some(id => !serverAchievements[id]);
-  if (unlocked.length === 0 && (serverMissing || keyStatsAhead || courseAhead || progress.totalChars > serverChars)) {
+  if (unlocked.length === 0 && (serverMissing || keyStatsAhead || courseAhead || dailyAhead || countersAhead ||
+      progress.totalChars > serverChars)) {
     pushProgressToServer();
   }
   if (onXpChange) onXpChange();

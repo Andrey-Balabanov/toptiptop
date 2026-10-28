@@ -47,8 +47,10 @@ describe('mergeUserProgress', () => {
       totalChars: 2000,
       keyStats: {},
       course: {},
+      daily: {},
+      counters: {},
     });
-    expect(mockDb.run).toHaveBeenCalledWith(JSON.stringify(result.achievements), 2000, '{}', '{}', 1);
+    expect(mockDb.run).toHaveBeenCalledWith(JSON.stringify(result.achievements), 2000, '{}', '{}', '{}', '{}', 1);
   });
 
   it('treats missing or corrupt stored achievements as empty', () => {
@@ -56,7 +58,9 @@ describe('mergeUserProgress', () => {
 
     const result = mergeUserProgress(1, { 'first-text': 100 }, 50);
 
-    expect(result).toEqual({ achievements: { 'first-text': 100 }, totalChars: 50, keyStats: {}, course: {} });
+    expect(result).toEqual({
+      achievements: { 'first-text': 100 }, totalChars: 50, keyStats: {}, course: {}, daily: {}, counters: {},
+    });
   });
 
   it('merges per-letter stats keeping the larger count of each', () => {

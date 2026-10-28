@@ -450,6 +450,17 @@ body {
 .focus-stats .fs-item { font-size: 12px; color: var(--dim); white-space: nowrap; }
 .focus-stats .fs-item b { color: var(--accent); font-weight: 600; font-size: 14px; margin-left: 3px; font-variant-numeric: tabular-nums; }
 
+/* ============ DAILY GOAL ============ */
+.daily { width: 100%; margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+.daily-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim); }
+.daily-streak { font-weight: 700; color: var(--cursor); font-size: 14px; }
+.daily-goal-select { margin-left: auto; font-size: 11px; padding: 2px 4px; border-radius: 5px; background: var(--panel-2); color: var(--text); border: 1px solid var(--key-border); }
+.daily-bar { height: 6px; border-radius: 3px; background: var(--panel-2); overflow: hidden; }
+.daily-fill { height: 100%; width: 0; background: var(--accent); transition: width 0.4s; }
+.daily.done .daily-fill { background: var(--correct); }
+.daily-text { font-size: 11px; color: var(--dim); }
+.daily.done .daily-text { color: var(--correct); }
+
 /* ============ LESSON INFO ============ */
 .lesson-info {
   text-align: center; font-size: 13px; color: var(--dim);

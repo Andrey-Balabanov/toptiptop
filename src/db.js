@@ -125,6 +125,12 @@ function migrate() {
   if (!columns.includes('course')) {
     db.exec("ALTER TABLE users ADD COLUMN course TEXT DEFAULT '{}'");
   }
+  if (!columns.includes('daily')) {
+    db.exec("ALTER TABLE users ADD COLUMN daily TEXT DEFAULT '{}'");
+  }
+  if (!columns.includes('counters')) {
+    db.exec("ALTER TABLE users ADD COLUMN counters TEXT DEFAULT '{}'");
+  }
 
   // Opportunistic cleanup: expired or already-used verification codes are dead
   // weight. Prune them on startup so the table never grows without bound

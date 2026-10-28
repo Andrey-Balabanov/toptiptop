@@ -3,6 +3,7 @@
 import { FINGER_NAMES, refreshFingerNames, fingerFor, fingerMovement, homeKeyForFinger, createState } from './state.js';
 import { buildText, modeToLang, buildAdaptiveText } from './texts.js';
 import { getLessons, buildLessonText, currentLessonIndex, recordLessonResult } from './course.js';
+import { todayProgress, currentStreak, GOAL_OPTIONS } from './daily.js';
 import * as sound from './sound.js';
 import * as effects from './effects.js';
 import * as progress from './progress.js';
@@ -659,6 +660,54 @@ function updateStats() {
   return wpm;
 }
 
+/* ============ DAILY GOAL & STREAK ============ */
+
+/** Start screen widget: day streak, today's texts vs goal, goal picker. */
+function renderDaily() {
+  const daily = progress.getDaily();
+  const today = todayProgress(daily);
+  const streak = currentStreak(daily);
+  const streakEl = $('daily-streak');
+  if (streakEl) streakEl.textContent = '🔥 ' + streak;
+  const label = $('daily-streak-label');
+  if (label) label.textContent = t('daily.days_in_row');
+  const fill = $('daily-fill');
+  if (fill) fill.style.width = Math.min(100, (today.texts / daily.goal) * 100) + '%';
+  const text = $('daily-text');
+  if (text) {
+    text.textContent = t('daily.today')
+      .replace('{done}', Math.min(today.texts, daily.goal)).replace('{goal}', daily.goal);
+  }
+  const widget = $('daily');
+  if (widget) widget.classList.toggle('done', today.texts >= daily.goal);
+  const select = $('daily-goal');
+  if (select && select.options.length === 0) {
+    GOAL_OPTIONS.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = String(g);
+      select.appendChild(opt);
+    });
+    select.addEventListener('change', () => {
+      progress.setDailyGoal(Number(select.value));
+      renderDaily();
+    });
+  }
+  if (select) {
+    [...select.options].forEach(o => { o.textContent = t('daily.goal_option').replace('{n}', o.value); });
+    select.value = String(daily.goal);
+  }
+}
+
+/** Completion screen line when today's goal was just reached. */
+function showDailyResult(finished) {
+  const el = $('c-daily');
+  if (!el) return;
+  el.classList.toggle('hidden', !finished.goalReachedNow);
+  if (finished.goalReachedNow) {
+    el.textContent = t('daily.goal_reached').replace('{n}', finished.streak);
+  }
+}
+
 /* ============ COURSE ============ */
 
 function lessonLabel(lesson) {
@@ -846,7 +895,10 @@ function renderAchievements() {
     if (has) unlocked++;
     const cell = document.createElement('div');
     cell.className = 'ach-cell' + (has ? ' unlocked' : '');
-    cell.innerHTML = `${has ? a.icon : '🔒'}<div class="ach-tip"><b>${a.name}</b><br>${a.desc}</div>`;
+    // Hidden achievements reveal nothing until they are earned
+    const name = !has && a.hidden ? '???' : a.name;
+    const desc = !has && a.hidden ? t('ach.hidden.desc') : a.desc;
+    cell.innerHTML = `${has ? a.icon : (a.hidden ? '❔' : '🔒')}<div class="ach-tip"><b>${name}</b><br>${desc}</div>`;
     grid.appendChild(cell);
   });
   const count = $('ach-count');
@@ -862,7 +914,12 @@ async function finishSession() {
   const wrongCount = state.errors.filter(Boolean).length;
   const accuracy = state.pos > 0 ? Math.round(((state.pos - wrongCount) / state.pos) * 100) : 100;
 
-  const xpEarned = progress.finishSession(wpm, mode);
+  const finished = progress.finishSession(wpm, mode, {
+    accuracy, durationMs: elapsed, textLength: state.text.length,
+  });
+  const xpEarned = finished.xpEarned;
+  showDailyResult(finished);
+  renderDaily();
   updateHeader();
   renderAchievements();
 
@@ -1183,6 +1240,7 @@ window.addEventListener('auth-login', (e) => {
   updateHeader();
   renderAchievements();
   refreshLessonSelect();
+  renderDaily();
 
   // Apply user language & profile
   if (user.language) {
@@ -1217,6 +1275,8 @@ window.addEventListener('auth-logout', () => {
   currentProfile = 'general';
   updateHeader();
   renderAchievements();
+  refreshLessonSelect();
+  renderDaily();
 
   // If in focus-mode, exit to menu
   if (document.querySelector('.app.focus-mode')) {
@@ -1234,6 +1294,9 @@ window.addEventListener('profile-changed', (e) => {
   applyLanguageToDOM();
   refreshFingerNames();
   updateHeader(); // re-render level title with new language
+  renderAchievements();
+  refreshLessonSelect();
+  renderDaily();
 
   // Update profile for text selection
   currentProfile = profile;
@@ -1401,6 +1464,7 @@ function init() {
     });
   }
   refreshLessonSelect();
+  renderDaily();
   if (lengthSelect) {
     lengthSelect.addEventListener('change', () => {
       if (document.querySelector('.app.focus-mode')) {

@@ -18,6 +18,18 @@ const MAX_KEY_STATS = 300;
 const isCount = n => Number.isInteger(n) && n >= 0;
 const isPlainObject = o => !!o && typeof o === 'object' && !Array.isArray(o);
 
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** { goal, lastGoalDay, streak, best, today: { date, texts, ms } } */
+function isValidDaily(d) {
+  return isPlainObject(d) &&
+    isCount(d.goal) && d.goal >= 1 && d.goal <= 50 &&
+    (d.lastGoalDay === null || DAY.test(d.lastGoalDay)) &&
+    isCount(d.streak) && isCount(d.best) &&
+    isPlainObject(d.today) && (d.today.date === null || DAY.test(d.today.date)) &&
+    isCount(d.today.texts) && isCount(d.today.ms);
+}
+
 /** { ru: { passed: 3, best: { '0': { wpm: 20, accuracy: 97 } } } } */
 function isValidCourse(course) {
   if (!isPlainObject(course)) return false;
@@ -94,7 +106,7 @@ router.patch('/me/keyboard', authMiddleware, (req, res) => {
 // Merge achievements / total characters into the account (union, never removes)
 router.patch('/me/progress', authMiddleware, (req, res) => {
   try {
-    const { achievements = {}, totalChars = 0, keyStats = {}, course = {} } = req.body || {};
+    const { achievements = {}, totalChars = 0, keyStats = {}, course = {}, daily = null, counters = {} } = req.body || {};
     const entries = achievements && typeof achievements === 'object' && !Array.isArray(achievements)
       ? Object.entries(achievements)
       : null;
@@ -115,7 +127,14 @@ router.patch('/me/progress', authMiddleware, (req, res) => {
     if (!isValidCourse(course)) {
       return res.status(400).json({ error: 'Некорректный прогресс курса' });
     }
-    const result = mergeUserProgress(req.user.id, achievements, totalChars, keyStats, course);
+    if (daily !== null && !isValidDaily(daily)) {
+      return res.status(400).json({ error: 'Некорректная дневная цель' });
+    }
+    if (!isPlainObject(counters) || Object.keys(counters).length > 20 ||
+        !Object.entries(counters).every(([k, v]) => /^[a-zA-Z]{1,30}$/.test(k) && isCount(v) && v < 1e9)) {
+      return res.status(400).json({ error: 'Некорректные счётчики' });
+    }
+    const result = mergeUserProgress(req.user.id, achievements, totalChars, keyStats, course, daily, counters);
     if (!result) return res.status(404).json({ error: 'Пользователь не найден' });
     res.json(result);
   } catch (err) {

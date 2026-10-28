@@ -254,7 +254,7 @@ function getUserById(userId) {
   const user = db.prepare(
     `SELECT id, username, email, email_verified, language, profile, keyboard_layout,
             total_xp, best_wpm, best_streak, session_count, created_at,
-            role, is_banned, achievements, total_chars, key_stats, course
+            role, is_banned, achievements, total_chars, key_stats, course, daily, counters
      FROM users WHERE id = ?`
   ).get(userId);
   if (!user) return null;
@@ -308,9 +308,31 @@ function mergeCourse(a = {}, b = {}) {
   return out;
 }
 
-function mergeUserProgress(userId, achievements, totalChars, keyStats = {}, course = {}) {
+/** Daily goal / streak: the copy with the later goal day wins, bests are maxed (mirrors daily.js). */
+function mergeDaily(a = {}, b = {}) {
+  const norm = d => ({ goal: 3, lastGoalDay: null, streak: 0, best: 0, today: { date: null, texts: 0, ms: 0 }, ...d });
+  const x = norm(a);
+  const y = norm(b);
+  const later = (y.lastGoalDay || '') > (x.lastGoalDay || '') ||
+    ((y.lastGoalDay || '') === (x.lastGoalDay || '') && y.streak > x.streak) ? y : x;
+  const other = later === x ? y : x;
+  let today = later.today;
+  if (other.today.date && (!today.date || other.today.date > today.date)) today = other.today;
+  else if (other.today.date === today.date) {
+    today = { date: today.date, texts: Math.max(today.texts, other.today.texts), ms: Math.max(today.ms, other.today.ms) };
+  }
+  return { ...later, best: Math.max(x.best, y.best, later.streak), today };
+}
+
+function mergeCounters(a = {}, b = {}) {
+  const out = { ...a };
+  for (const [k, v] of Object.entries(b)) out[k] = Math.max(out[k] || 0, v);
+  return out;
+}
+
+function mergeUserProgress(userId, achievements, totalChars, keyStats = {}, course = {}, daily = null, counters = {}) {
   const db = getDb();
-  const row = db.prepare('SELECT achievements, total_chars, key_stats, course FROM users WHERE id = ?').get(userId);
+  const row = db.prepare('SELECT achievements, total_chars, key_stats, course, daily, counters FROM users WHERE id = ?').get(userId);
   if (!row) return null;
   const merged = parseJsonObject(row.achievements);
   for (const [id, unlockedAt] of Object.entries(achievements || {})) {
@@ -324,9 +346,17 @@ function mergeUserProgress(userId, achievements, totalChars, keyStats = {}, cour
     stats[key] = { h: Math.max(cur.h, s.h), m: Math.max(cur.m, s.m) };
   }
   const mergedCourse = mergeCourse(parseJsonObject(row.course), course);
-  db.prepare('UPDATE users SET achievements = ?, total_chars = ?, key_stats = ?, course = ? WHERE id = ?')
-    .run(JSON.stringify(merged), chars, JSON.stringify(stats), JSON.stringify(mergedCourse), userId);
-  return { achievements: merged, totalChars: chars, keyStats: stats, course: mergedCourse };
+  const storedDaily = parseJsonObject(row.daily);
+  const mergedDaily = daily ? mergeDaily(storedDaily, daily) : storedDaily;
+  const mergedCounters = mergeCounters(parseJsonObject(row.counters), counters);
+  db.prepare(`UPDATE users SET achievements = ?, total_chars = ?, key_stats = ?, course = ?, daily = ?, counters = ?
+              WHERE id = ?`)
+    .run(JSON.stringify(merged), chars, JSON.stringify(stats), JSON.stringify(mergedCourse),
+      JSON.stringify(mergedDaily), JSON.stringify(mergedCounters), userId);
+  return {
+    achievements: merged, totalChars: chars, keyStats: stats,
+    course: mergedCourse, daily: mergedDaily, counters: mergedCounters,
+  };
 }
 
 /* ============ Helpers ============ */
@@ -357,6 +387,8 @@ function formatUser(row) {
     totalChars: row.total_chars || 0,
     keyStats: parseJsonObject(row.key_stats),
     course: parseJsonObject(row.course),
+    daily: parseJsonObject(row.daily),
+    counters: parseJsonObject(row.counters),
     role: row.role || 'user',
     isBanned: !!row.is_banned,
     createdAt: row.created_at,

@@ -272,6 +272,8 @@ describe('auth service', () => {
         totalChars: 0,
         keyStats: {},
         course: {},
+        daily: {},
+        counters: {},
         role: 'user',
         isBanned: false,
         createdAt: '2024-06-01',

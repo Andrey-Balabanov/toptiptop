@@ -41,6 +41,16 @@
       <span class="sc-label" data-i18n="label.score">Очки</span>
       <span class="sc-value" id="score">0</span>
     </div>
+    <!-- Daily goal & day streak -->
+    <div class="daily" id="daily">
+      <div class="daily-row">
+        <span class="daily-streak" id="daily-streak">🔥 0</span>
+        <span class="daily-label" id="daily-streak-label"></span>
+        <select id="daily-goal" class="daily-goal-select" data-i18n-title="daily.goal_title" title="Дневная цель"></select>
+      </div>
+      <div class="daily-bar"><div class="daily-fill" id="daily-fill"></div></div>
+      <div class="daily-text" id="daily-text"></div>
+    </div>
   </div>
 
   <!-- Compact stats row -->
@@ -176,6 +186,7 @@
       </div>
     </div>
     <div class="completion-course hidden" id="c-course"></div>
+    <div class="completion-course hidden" id="c-daily"></div>
     <div class="completion-actions">
       <button class="primary-btn" id="btn-next-text" data-i18n="btn.next_text">Следующий текст →</button>
       <button class="ghost-btn" id="btn-to-menu" data-i18n="btn.to_menu">В меню</button>
