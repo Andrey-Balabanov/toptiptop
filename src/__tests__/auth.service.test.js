@@ -270,6 +270,7 @@ describe('auth service', () => {
         sessionCount: 10,
         achievements: {},
         totalChars: 0,
+        keyStats: {},
         role: 'user',
         isBanned: false,
         createdAt: '2024-06-01',

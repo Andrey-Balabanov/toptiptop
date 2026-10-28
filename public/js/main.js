@@ -1,7 +1,7 @@
 /* Main entry point – bootstraps the typing trainer */
 
 import { FINGER_NAMES, refreshFingerNames, fingerFor, fingerMovement, homeKeyForFinger, createState } from './state.js';
-import { buildText, modeToLang } from './texts.js';
+import { buildText, modeToLang, buildAdaptiveText } from './texts.js';
 import * as sound from './sound.js';
 import * as effects from './effects.js';
 import * as progress from './progress.js';
@@ -658,11 +658,36 @@ function updateStats() {
   return wpm;
 }
 
+/* One-line note above the text (e.g. which weak letters an adaptive lesson trains) */
+function setLessonInfo(html) {
+  const el = $('lesson-info');
+  if (!el) return;
+  el.innerHTML = html;
+  el.classList.toggle('hidden', !html);
+}
+
+/* "Accuracy first": on a wrong key the cursor waits for the right one */
+let accuracyMode = false;
+try { accuracyMode = localStorage.getItem('toptip-accuracy-mode') === 'true'; } catch {}
+window.addEventListener('accuracy-mode-toggled', (e) => { accuracyMode = e.detail.on; });
+
 function reset() {
   const mode = $('mode').value;
   const length = $('length').value;
   const lang = modeToLang(mode);
-  state = createState(buildText(mode, length, currentProfile, lang));
+  let lessonInfo = '';
+  let text;
+  if (mode.startsWith('adaptive-')) {
+    const lesson = buildAdaptiveText(lang, length, progress.getKeyStats());
+    text = lesson.text;
+    lessonInfo = lesson.weak.length
+      ? `${t('lesson.weak_letters')} <b>${lesson.weak.join(' ')}</b>`
+      : t('lesson.no_data');
+  } else {
+    text = buildText(mode, length, currentProfile, lang);
+  }
+  state = createState(text);
+  setLessonInfo(lessonInfo);
   // XP before this text: the server gets everything earned during it (chars, combos, completion)
   state.xpAtStart = progress.getProgress().xp;
 
@@ -953,7 +978,8 @@ function handleKey(e) {
   const isCorrect = key === expected;
 
   if (isCorrect) {
-    state.errors[state.pos] = false;
+    // In accuracy mode a letter missed before stays marked as an error once it's finally typed
+    state.errors[state.pos] = accuracyMode && !!state.errors[state.pos];
     sound.playCorrect();
     const result = progress.onCorrectChar(expected);
     if (result.combo) {
@@ -967,8 +993,16 @@ function handleKey(e) {
     state.errors[state.pos] = true;
     state.totalErrors++;
     sound.playWrong();
-    progress.onWrongChar();
+    progress.onWrongChar(expected);
     flashActualKey(key);
+    if (accuracyMode) {
+      // Stay on this letter until the right key is pressed
+      flashKey(expected, false, false);
+      render();
+      updateStats();
+      updateStreakDisplay();
+      return;
+    }
   }
 
   flashKey(expected, isCorrect,

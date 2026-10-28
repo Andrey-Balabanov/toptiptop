@@ -133,6 +133,26 @@ function addSidebarButtons(user) {
   };
   group.appendChild(arrowBtn);
 
+  // "No mistakes" toggle — the cursor waits on a wrong key until the right one is pressed
+  const accBtn = document.createElement('button');
+  accBtn.className = 'small toggle';
+  accBtn.dataset.i18nTitle = 'title.accuracy_mode';
+  accBtn.title = t('title.accuracy_mode');
+  const setAccState = on => {
+    accBtn.classList.toggle('active', on);
+    accBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    accBtn.dataset.i18n = on ? 'btn.accuracy_on' : 'btn.accuracy_off';
+    accBtn.textContent = t(accBtn.dataset.i18n);
+  };
+  setAccState(localStorage.getItem('toptip-accuracy-mode') === 'true');
+  accBtn.onclick = () => {
+    const next = localStorage.getItem('toptip-accuracy-mode') !== 'true';
+    localStorage.setItem('toptip-accuracy-mode', next ? 'true' : 'false');
+    setAccState(next);
+    window.dispatchEvent(new CustomEvent('accuracy-mode-toggled', { detail: { on: next } }));
+  };
+  group.appendChild(accBtn);
+
   // History button (logged-in only) — text from i18n already includes 📊
   if (api.isLoggedIn()) {
     const histBtn = document.createElement('button');

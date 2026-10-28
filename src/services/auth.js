@@ -254,7 +254,7 @@ function getUserById(userId) {
   const user = db.prepare(
     `SELECT id, username, email, email_verified, language, profile, keyboard_layout,
             total_xp, best_wpm, best_streak, session_count, created_at,
-            role, is_banned, achievements, total_chars
+            role, is_banned, achievements, total_chars, key_stats
      FROM users WHERE id = ?`
   ).get(userId);
   if (!user) return null;
@@ -292,23 +292,29 @@ function updateUserStats(userId, newXp, newWpm, newStreak) {
  * Merge client progress into the account: achievements are unioned (keeping the
  * earliest unlock time) and total_chars only ever grows. Returns the merged result.
  */
-function mergeUserProgress(userId, achievements, totalChars) {
+function mergeUserProgress(userId, achievements, totalChars, keyStats = {}) {
   const db = getDb();
-  const row = db.prepare('SELECT achievements, total_chars FROM users WHERE id = ?').get(userId);
+  const row = db.prepare('SELECT achievements, total_chars, key_stats FROM users WHERE id = ?').get(userId);
   if (!row) return null;
-  const merged = parseAchievements(row.achievements);
+  const merged = parseJsonObject(row.achievements);
   for (const [id, unlockedAt] of Object.entries(achievements || {})) {
     merged[id] = merged[id] ? Math.min(merged[id], unlockedAt) : unlockedAt;
   }
   const chars = Math.max(row.total_chars || 0, totalChars || 0);
-  db.prepare('UPDATE users SET achievements = ?, total_chars = ? WHERE id = ?')
-    .run(JSON.stringify(merged), chars, userId);
-  return { achievements: merged, totalChars: chars };
+  // Per-letter hit/miss counters only grow, so the larger count of each wins
+  const stats = parseJsonObject(row.key_stats);
+  for (const [key, s] of Object.entries(keyStats || {})) {
+    const cur = stats[key] || { h: 0, m: 0 };
+    stats[key] = { h: Math.max(cur.h, s.h), m: Math.max(cur.m, s.m) };
+  }
+  db.prepare('UPDATE users SET achievements = ?, total_chars = ?, key_stats = ? WHERE id = ?')
+    .run(JSON.stringify(merged), chars, JSON.stringify(stats), userId);
+  return { achievements: merged, totalChars: chars, keyStats: stats };
 }
 
 /* ============ Helpers ============ */
 
-function parseAchievements(raw) {
+function parseJsonObject(raw) {
   try {
     const parsed = JSON.parse(raw || '{}');
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
@@ -330,8 +336,9 @@ function formatUser(row) {
     bestWpm: row.best_wpm,
     bestStreak: row.best_streak,
     sessionCount: row.session_count,
-    achievements: parseAchievements(row.achievements),
+    achievements: parseJsonObject(row.achievements),
     totalChars: row.total_chars || 0,
+    keyStats: parseJsonObject(row.key_stats),
     role: row.role || 'user',
     isBanned: !!row.is_banned,
     createdAt: row.created_at,

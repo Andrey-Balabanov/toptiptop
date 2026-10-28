@@ -450,6 +450,14 @@ body {
 .focus-stats .fs-item { font-size: 12px; color: var(--dim); white-space: nowrap; }
 .focus-stats .fs-item b { color: var(--accent); font-weight: 600; font-size: 14px; margin-left: 3px; font-variant-numeric: tabular-nums; }
 
+/* ============ LESSON INFO ============ */
+.lesson-info {
+  text-align: center; font-size: 13px; color: var(--dim);
+  padding: 4px 10px; margin-bottom: 4px;
+}
+.lesson-info b { color: var(--cursor); font-family: "SF Mono", Menlo, monospace; font-size: 15px; letter-spacing: 2px; }
+.app.start-mode .lesson-info { display: none !important; }
+
 /* ============ TEXT DISPLAY ============ */
 .text-display {
   background: var(--panel); border-radius: 10px; padding: 24px;

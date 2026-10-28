@@ -13,6 +13,8 @@ function defaultProgress() {
     totalChars: 0,
     sessions: 0,
     achievements: {},
+    // Per-letter hits / misses ({ 'ф': { h: 120, m: 7 } }) — drives adaptive lessons and the heatmap
+    keyStats: {},
   };
 }
 
@@ -64,7 +66,21 @@ function pushProgressToServer() {
   api.updateProgress({
     achievements: progress.achievements,
     totalChars: progress.totalChars,
+    keyStats: progress.keyStats,
   }).catch(() => {});
+}
+
+/** Count a hit or miss for the expected character (letters, digits, punctuation; not whitespace). */
+function recordKey(ch, ok) {
+  if (!ch || ch === ' ' || ch === '\n') return;
+  const key = ch.toLowerCase();
+  if (!progress.keyStats) progress.keyStats = {};
+  const s = progress.keyStats[key] || (progress.keyStats[key] = { h: 0, m: 0 });
+  if (ok) s.h++; else s.m++;
+}
+
+export function getKeyStats() {
+  return progress.keyStats || {};
 }
 
 export function getProgress() {
@@ -164,6 +180,7 @@ export function awardXp(amount) {
 }
 
 export function onCorrectChar(ch) {
+  recordKey(ch, true);
   currentStreak++;
   progress.totalChars++;
   if (currentStreak > progress.bestStreak) progress.bestStreak = currentStreak;
@@ -187,7 +204,8 @@ export function onCorrectChar(ch) {
   return { combo: false };
 }
 
-export function onWrongChar() {
+export function onWrongChar(expected) {
+  recordKey(expected, false);
   currentStreak = 0;
   comboCelebrated.clear();
 }
@@ -226,6 +244,18 @@ export function resetProgress() {
   saveProgress();
 }
 
+/** Merge per-letter counters from several sources, keeping the larger count of each (they only grow). */
+function mergeKeyStats(...sources) {
+  const merged = {};
+  for (const src of sources) {
+    for (const [key, s] of Object.entries(src || {})) {
+      const cur = merged[key] || { h: 0, m: 0 };
+      merged[key] = { h: Math.max(cur.h, s.h || 0), m: Math.max(cur.m, s.m || 0) };
+    }
+  }
+  return merged;
+}
+
 /* Load progress from server data (called after login) */
 export function initFromServer(userData) {
   // Restore the locally persisted progress first. Authenticated users do not
@@ -251,13 +281,17 @@ export function initFromServer(userData) {
   progress.bestWpm = userData.bestWpm || 0;
   progress.sessions = userData.sessionCount || 0;
   progress.achievements = mergedAchievements;
+  const serverKeyStats = userData.keyStats || {};
+  progress.keyStats = mergeKeyStats(storedProgress.keyStats, progress.keyStats, serverKeyStats);
+  const keyStatsAhead = Object.entries(progress.keyStats).some(([k, s]) =>
+    !serverKeyStats[k] || s.h > serverKeyStats[k].h || s.m > serverKeyStats[k].m);
 
   initialized = true;
   saveProgress();
   // Re-check achievements against server stats; upload anything the account doesn't have yet
   const unlocked = checkAchievements();
   const serverMissing = Object.keys(mergedAchievements).some(id => !serverAchievements[id]);
-  if (unlocked.length === 0 && (serverMissing || progress.totalChars > serverChars)) {
+  if (unlocked.length === 0 && (serverMissing || keyStatsAhead || progress.totalChars > serverChars)) {
     pushProgressToServer();
   }
   if (onXpChange) onXpChange();

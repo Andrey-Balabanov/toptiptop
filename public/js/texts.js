@@ -485,6 +485,94 @@ const DRILLS = {
 
 const LENGTH_MULT = { short: 1, medium: 2, long: 3 };
 
+/** Pick `count` items from `pool`, without repeating one until the pool is used up. */
+function pickDistinct(pool, count) {
+  const out = [];
+  let bag = [];
+  while (out.length < count) {
+    if (bag.length === 0) bag = [...pool].sort(() => Math.random() - 0.5);
+    out.push(bag.pop());
+  }
+  return out;
+}
+
+/* ===== ADAPTIVE LESSONS ===== */
+
+const ALPHABETS = {
+  ru: 'йцукенгшщзхъфывапролджэячсмитьбюё',
+  en: 'qwertyuiopasdfghjklzxcvbnm',
+};
+/** Below this many presses a letter's error rate is too noisy to judge. */
+const MIN_SAMPLES = 5;
+const MIN_WEAK_RATE = 0.05;
+
+/** Smoothed error rate of a letter (0..1); letters without data count as average-ish. */
+function errorRate(stats, letter) {
+  const s = stats[letter];
+  if (!s) return 0;
+  return (s.m + 0.5) / (s.h + s.m + 2);
+}
+
+/**
+ * The letters of `language` the user misses most often (with enough data to tell).
+ * @param {Object<string,{h:number,m:number}>} keyStats
+ * @returns {string[]} up to `n` letters, weakest first
+ */
+function weakLetters(keyStats, language = 'ru', n = 4) {
+  const alphabet = ALPHABETS[language] || ALPHABETS.en;
+  const known = [...alphabet].filter(l => keyStats[l] && keyStats[l].h + keyStats[l].m >= MIN_SAMPLES);
+  if (known.length === 0) return [];
+  // Weak = missed clearly more often than this user's average letter, and at least 5% of the time
+  // (with data on only a couple of letters the average means little: use a fixed 10%)
+  const avg = known.reduce((sum, l) => sum + errorRate(keyStats, l), 0) / known.length;
+  const threshold = known.length >= 3 ? Math.max(avg * 1.3, MIN_WEAK_RATE) : MIN_WEAK_RATE * 2;
+  return known
+    .filter(l => keyStats[l].m > 0 && errorRate(keyStats, l) >= threshold)
+    .sort((a, b) => errorRate(keyStats, b) - errorRate(keyStats, a))
+    .slice(0, n);
+}
+
+/** All distinct lowercase words of a language's texts (every profile). */
+function wordPool(language) {
+  const pools = TEXTS[language] || TEXTS.ru;
+  const re = language === 'ru' ? /[а-яё]+/g : /[a-z]+/g;
+  const words = new Set();
+  for (const list of Object.values(pools)) {
+    for (const text of list) (text.toLowerCase().match(re) || []).forEach(w => words.add(w));
+  }
+  return [...words];
+}
+
+/**
+ * Build a lesson that concentrates on the user's weakest letters: real words that
+ * contain them (weighted by how many weak letters they hold), mixed with short
+ * drills of those letters. Without enough data, falls back to a mix of real words.
+ * @returns {{ text: string, weak: string[] }}
+ */
+function buildAdaptiveText(language, length, keyStats = {}) {
+  const weak = weakLetters(keyStats, language);
+  const words = wordPool(language);
+  const count = 12 * (LENGTH_MULT[length] || 1);
+  if (weak.length === 0) {
+    return { text: pickDistinct(words, count).join(' '), weak };
+  }
+  const weakSet = new Set(weak);
+  const scored = words
+    .map(w => ({ w, score: [...w].filter(c => weakSet.has(c)).length / Math.sqrt(w.length) }))
+    .filter(x => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 60)
+    .map(x => x.w);
+  const out = [];
+  const picked = scored.length ? pickDistinct(scored, count) : [];
+  for (let i = 0; i < count; i++) {
+    // Every fourth item is a pure drill of the weak letters
+    if (i % 4 === 3 || picked.length === 0) out.push(genDrill(weak.join(''), 4, 1));
+    else out.push(picked[i]);
+  }
+  return { text: out.join(' '), weak };
+}
+
 function buildText(mode, length, profile = 'general', language = 'ru') {
   // Drills are unaffected by profile/language
   if (DRILLS[mode]) {
@@ -495,23 +583,18 @@ function buildText(mode, length, profile = 'general', language = 'ru') {
   // Code mode uses CODE_TEXTS with profile
   if (mode === 'code') {
     const pool = CODE_TEXTS[profile] || CODE_TEXTS.general;
-    const count = LENGTH_MULT[length];
-    const parts = [];
-    for (let i = 0; i < count; i++) parts.push(pool[Math.floor(Math.random() * pool.length)]);
-    return parts.join(' ');
+    // Separate snippets with a newline — joining with a space glued `}` to the next line
+    return pickDistinct(pool, LENGTH_MULT[length]).join('\n');
   }
 
   // Regular text mode: use language + profile
   const langPool = TEXTS[mode] || TEXTS.ru;
   const pool = langPool[profile] || langPool.general;
-  const count = LENGTH_MULT[length];
-  const parts = [];
-  for (let i = 0; i < count; i++) parts.push(pool[Math.floor(Math.random() * pool.length)]);
-  return parts.join(' ');
+  return pickDistinct(pool, LENGTH_MULT[length]).join(' ');
 }
 
 function modeToLang(mode) {
-  if (mode === 'ru' || mode.startsWith('drill-home-ru') || mode.startsWith('drill-top-ru')) return 'ru';
+  if (mode === 'ru' || mode.endsWith('-ru')) return 'ru';
   if (mode === 'de') return 'de';
   if (mode === 'fr') return 'fr';
   if (mode === 'es') return 'es';
@@ -530,4 +613,5 @@ function getProfileLabel(language, profile) {
 export {
   TEXTS, CODE_TEXTS, DRILLS, LENGTH_MULT, PROFILES,
   PROFILE_LABELS, buildText, modeToLang, getProfileLabel,
+  buildAdaptiveText, weakLetters, pickDistinct,
 };

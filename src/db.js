@@ -119,6 +119,9 @@ function migrate() {
   if (!columns.includes('total_chars')) {
     db.exec("ALTER TABLE users ADD COLUMN total_chars INTEGER DEFAULT 0");
   }
+  if (!columns.includes('key_stats')) {
+    db.exec("ALTER TABLE users ADD COLUMN key_stats TEXT DEFAULT '{}'");
+  }
 
   // Opportunistic cleanup: expired or already-used verification codes are dead
   // weight. Prune them on startup so the table never grows without bound

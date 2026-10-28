@@ -14,6 +14,8 @@ const router = Router();
 const VALID_KEYBOARD_LAYOUTS = ['pc-ansi', 'pc-iso', 'mac-ansi', 'mac-iso'];
 const ACHIEVEMENT_ID = /^[a-z0-9-]{1,40}$/;
 const MAX_ACHIEVEMENTS = 200;
+const MAX_KEY_STATS = 300;
+const isCount = n => Number.isInteger(n) && n >= 0;
 
 // Get current user profile
 router.get('/me', authMiddleware, (req, res) => {
@@ -79,7 +81,7 @@ router.patch('/me/keyboard', authMiddleware, (req, res) => {
 // Merge achievements / total characters into the account (union, never removes)
 router.patch('/me/progress', authMiddleware, (req, res) => {
   try {
-    const { achievements = {}, totalChars = 0 } = req.body || {};
+    const { achievements = {}, totalChars = 0, keyStats = {} } = req.body || {};
     const entries = achievements && typeof achievements === 'object' && !Array.isArray(achievements)
       ? Object.entries(achievements)
       : null;
@@ -90,7 +92,14 @@ router.patch('/me/progress', authMiddleware, (req, res) => {
     if (!Number.isInteger(totalChars) || totalChars < 0) {
       return res.status(400).json({ error: 'Некорректное число символов' });
     }
-    const result = mergeUserProgress(req.user.id, achievements, totalChars);
+    const statEntries = keyStats && typeof keyStats === 'object' && !Array.isArray(keyStats)
+      ? Object.entries(keyStats)
+      : null;
+    if (!statEntries || statEntries.length > MAX_KEY_STATS ||
+        !statEntries.every(([key, s]) => [...key].length === 1 && s && isCount(s.h) && isCount(s.m))) {
+      return res.status(400).json({ error: 'Некорректная статистика клавиш' });
+    }
+    const result = mergeUserProgress(req.user.id, achievements, totalChars, keyStats);
     if (!result) return res.status(404).json({ error: 'Пользователь не найден' });
     res.json(result);
   } catch (err) {

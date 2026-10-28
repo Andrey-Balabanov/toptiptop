@@ -45,8 +45,9 @@ describe('mergeUserProgress', () => {
     expect(result).toEqual({
       achievements: { 'first-text': 100, 'level-5': 300, 'streak-50': 700 },
       totalChars: 2000,
+      keyStats: {},
     });
-    expect(mockDb.run).toHaveBeenCalledWith(JSON.stringify(result.achievements), 2000, 1);
+    expect(mockDb.run).toHaveBeenCalledWith(JSON.stringify(result.achievements), 2000, '{}', 1);
   });
 
   it('treats missing or corrupt stored achievements as empty', () => {
@@ -54,7 +55,23 @@ describe('mergeUserProgress', () => {
 
     const result = mergeUserProgress(1, { 'first-text': 100 }, 50);
 
-    expect(result).toEqual({ achievements: { 'first-text': 100 }, totalChars: 50 });
+    expect(result).toEqual({ achievements: { 'first-text': 100 }, totalChars: 50, keyStats: {} });
+  });
+
+  it('merges per-letter stats keeping the larger count of each', () => {
+    mockDb.get.mockReturnValueOnce({
+      achievements: '{}',
+      total_chars: 0,
+      key_stats: JSON.stringify({ 'а': { h: 50, m: 5 }, 'ы': { h: 10, m: 4 } }),
+    });
+
+    const result = mergeUserProgress(1, {}, 0, { 'а': { h: 40, m: 9 }, 'щ': { h: 3, m: 2 } });
+
+    expect(result.keyStats).toEqual({
+      'а': { h: 50, m: 9 },
+      'ы': { h: 10, m: 4 },
+      'щ': { h: 3, m: 2 },
+    });
   });
 
   it('returns null for an unknown user', () => {
