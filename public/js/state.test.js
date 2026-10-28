@@ -15,8 +15,10 @@
  *  MOCKS
  * =================================================================== */
 
-let mockLang = 'ru';
-const mockDict = {
+// `var`, not let/const: jest.mock is hoisted above these declarations and
+// state.js calls t() while it is first imported, before they are initialised
+var mockLang = 'ru';
+var mockDict = {
   ru: {
     'finger.lp': 'Лев. мизинец',
     'finger.lr': 'Лев. безым.',
@@ -46,7 +48,7 @@ jest.mock('./i18n.js', () => {
   return {
     ...actual,
     t: jest.fn((key) => {
-      const dict = mockDict[mockLang] || mockDict.ru;
+      const dict = mockDict ? (mockDict[mockLang] || mockDict.ru) : {};
       return dict[key] || key;
     }),
   };

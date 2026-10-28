@@ -90,8 +90,10 @@ describe('needsShift()', () => {
     test('№ (RU shift+3) returns true', () => {
       expect(needsShift('№')).toBe(true);
     });
-    test('; (RU shift+4) returns true', () => {
-      expect(needsShift(';')).toBe(true);
+    // `;` is Shift+4 on RU but its own unshifted key on EN; shift.js deliberately
+    // answers false for such layout-dependent characters (see ALWAYS_NEEDS_SHIFT)
+    test('; (RU shift+4, unshifted on EN) returns false', () => {
+      expect(needsShift(';')).toBe(false);
     });
     test(': (RU shift+6) returns true', () => {
       expect(needsShift(':')).toBe(true);

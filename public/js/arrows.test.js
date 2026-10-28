@@ -233,6 +233,7 @@ import {
   drawArrow,
   clearArrow,
   isReady,
+  FALLBACK_COLOR,
 } from './arrows.js';
 
 /* ===================================================================
@@ -321,17 +322,11 @@ describe('arrows.js — SVG Arrow Overlay', () => {
     });
 
     test('makes keyboardEl position relative if it is static', () => {
-      // Default position is 'relative' in our mock, force static
-      mockGetComputedStyle = () => ({ position: 'static', getPropertyValue: () => '' });
+      // Default position is 'relative' in our mock, force static for this test only
+      global.getComputedStyle = () => ({ position: 'static', getPropertyValue: () => '' });
       initArrowOverlay(keyboardEl);
       expect(keyboardEl.style.position).toBe('relative');
-      // Restore
-      mockGetComputedStyle = (el) => ({
-        position: el.style.position || 'relative',
-        getPropertyValue(name) {
-          return mockCSSVarMap[name] || '';
-        },
-      });
+      global.getComputedStyle = mockGetComputedStyle;
     });
 
     test('does not override position if already non-static', () => {
@@ -466,10 +461,10 @@ describe('arrows.js — SVG Arrow Overlay', () => {
       const g = svg.querySelectorAll('.movement-arrow')[0];
       const line = g.children.find(c => c.tagName === 'line');
 
-      expect(Number(line.attributes.x1)).toBe(225);
-      expect(Number(line.attributes.y1)).toBe(275);
-      expect(Number(line.attributes.x2)).toBe(175);
-      expect(Number(line.attributes.y2)).toBe(205);
+      expect(Number(line.attributes.x1)).toBe(175);
+      expect(Number(line.attributes.y1)).toBe(175);
+      expect(Number(line.attributes.x2)).toBe(125);
+      expect(Number(line.attributes.y2)).toBe(105);
     });
 
     test('arrow head polygon has 3 points (triangle)', () => {
@@ -481,10 +476,10 @@ describe('arrows.js — SVG Arrow Overlay', () => {
 
       const points = head.attributes.points.split(' ');
       expect(points.length).toBe(3);
-      // First point should be the target center
+      // First point should be the target center (relative to the keyboard)
       const firstPoint = points[0].split(',');
-      expect(Number(firstPoint[0])).toBe(175);
-      expect(Number(firstPoint[1])).toBe(205);
+      expect(Number(firstPoint[0])).toBe(125);
+      expect(Number(firstPoint[1])).toBe(105);
     });
 
     test('uses different colors for different fingers', () => {
@@ -529,10 +524,10 @@ describe('arrows.js — SVG Arrow Overlay', () => {
       // With scroll:
       //   from: (200 + 25 - 50 + 30, 250 + 25 - 100 + 50) = (205, 225)
       //   to:   (150 + 25 - 50 + 30, 180 + 25 - 100 + 50) = (155, 155)
-      expect(Number(line.attributes.x1)).toBe(225 + 30);
-      expect(Number(line.attributes.y1)).toBe(275 + 50);
-      expect(Number(line.attributes.x2)).toBe(175 + 30);
-      expect(Number(line.attributes.y2)).toBe(205 + 50);
+      expect(Number(line.attributes.x1)).toBe(205);
+      expect(Number(line.attributes.y1)).toBe(225);
+      expect(Number(line.attributes.x2)).toBe(155);
+      expect(Number(line.attributes.y2)).toBe(155);
     });
 
     test('replaces previous arrow when called again', () => {
@@ -656,24 +651,30 @@ describe('arrows.js — SVG Arrow Overlay', () => {
       expect(arrows.length).toBe(0);
     });
 
-    test('does nothing when CSS variable for fingerId is not defined', () => {
+    // A missing finger colour must never drop the arrow: it falls back to
+    // --accent, then FALLBACK_COLOR (see resolveFingerColor in arrows.js)
+    test('falls back to the default colour when the finger CSS variable is not defined', () => {
       drawArrow(homeKeyEl, targetKeyEl, 'nonexistent-finger', keyboardEl);
       const svg = keyboardEl.children.find(el => el.tagName === 'svg');
-      const arrows = svg ? svg.querySelectorAll('.movement-arrow') : [];
-      expect(arrows.length).toBe(0);
+      const arrows = svg.querySelectorAll('.movement-arrow');
+      expect(arrows.length).toBe(1);
+      const line = arrows[0].children.find(c => c.tagName === 'line');
+      expect(line.attributes.stroke).toBe(FALLBACK_COLOR);
     });
 
-    test('does nothing when CSS color value is empty string', () => {
-      // Simulate missing CSS variable
+    test('falls back to the default colour when the CSS colour value is empty', () => {
       const originalColor = mockCSSVarMap['--lp'];
       mockCSSVarMap['--lp'] = '';
-
-      drawArrow(homeKeyEl, targetKeyEl, 'lp', keyboardEl);
-      const svg = keyboardEl.children.find(el => el.tagName === 'svg');
-      const arrows = svg ? svg.querySelectorAll('.movement-arrow') : [];
-      expect(arrows.length).toBe(0);
-
-      mockCSSVarMap['--lp'] = originalColor;
+      try {
+        drawArrow(homeKeyEl, targetKeyEl, 'lp', keyboardEl);
+        const svg = keyboardEl.children.find(el => el.tagName === 'svg');
+        const arrows = svg.querySelectorAll('.movement-arrow');
+        expect(arrows.length).toBe(1);
+        const line = arrows[0].children.find(c => c.tagName === 'line');
+        expect(line.attributes.stroke).toBe(FALLBACK_COLOR);
+      } finally {
+        mockCSSVarMap['--lp'] = originalColor;
+      }
     });
   });
 

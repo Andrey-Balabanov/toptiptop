@@ -66,7 +66,7 @@ describe('auth service', () => {
 
       expect(mockDb.prepare).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO users'));
       expect(mockDb.run).toHaveBeenCalledWith(
-        'testuser', 'test@test.com', expect.any(String), 1
+        'testuser', 'test@test.com', expect.any(String), 1, 'user'
       );
       expect(result).toHaveProperty('token');
       expect(result).toHaveProperty('user');
@@ -268,6 +268,10 @@ describe('auth service', () => {
         bestWpm: 60,
         bestStreak: 30,
         sessionCount: 10,
+        achievements: {},
+        totalChars: 0,
+        role: 'user',
+        isBanned: false,
         createdAt: '2024-06-01',
       });
     });
