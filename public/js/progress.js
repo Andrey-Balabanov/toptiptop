@@ -23,7 +23,15 @@ function defaultProgress() {
     daily: normalizeDaily(),
     // Counters behind some achievements (only grow)
     counters: { perfectTexts: 0, nightTexts: 0, morningTexts: 0 },
+    // Recent finished texts on this device, oldest first (charts / "vs your average")
+    history: [],
   };
+}
+
+const HISTORY_LIMIT = 200;
+
+export function getHistory() {
+  return progress.history || [];
 }
 
 let progress = defaultProgress();
@@ -309,10 +317,15 @@ export function finishSession(wpm, mode, info = {}) {
   const daily = recordText(progress.daily, info.durationMs, now);
   progress.daily = daily.daily;
 
+  const history = progress.history || [];
+  const lastWpms = history.slice(-10).map(h => h.wpm);
+  const avgWpmBefore = lastWpms.length ? lastWpms.reduce((s, v) => s + v, 0) / lastWpms.length : null;
+  progress.history = [...history, { t: now.getTime(), wpm, accuracy: info.accuracy ?? 100, mode }].slice(-HISTORY_LIMIT);
+
   awardXp(xpEarned);
   saveProgress();
   if (checkAchievements().length === 0) pushProgressToServer();
-  return { xpEarned, goalReachedNow: daily.goalReachedNow, streak: dailyStreak(progress.daily, now) };
+  return { xpEarned, goalReachedNow: daily.goalReachedNow, streak: dailyStreak(progress.daily, now), avgWpmBefore };
 }
 
 export function resetProgress() {

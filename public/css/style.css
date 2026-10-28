@@ -725,6 +725,31 @@ kbd { background: var(--panel); padding: 2px 6px; border-radius: 3px; font-famil
 
 /* ============ COMPLETION OVERLAY ============ */
 .completion-overlay { position: fixed; inset: 0; background: var(--overlay); display: flex; align-items: center; justify-content: center; z-index: 300; animation: fadeIn 0.3s ease-out; }
+.completion-insight { margin: -8px 0 16px; font-size: 13px; color: var(--dim); }
+.completion-insight b { color: var(--wrong); font-family: "SF Mono", Menlo, monospace; font-size: 15px; }
+
+/* ============ STATISTICS WINDOW ============ */
+.stats-modal { max-width: 640px !important; width: 94%; }
+.stats-modal h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); margin: 14px 0 8px; display: flex; align-items: center; gap: 10px; }
+.stats-modal .stats-lang { width: auto !important; padding: 2px 6px !important; margin: 0 !important; font-size: 12px; }
+.stats-chart-wrap { color: var(--dim); font-size: 13px; min-height: 40px; }
+.stats-chart { width: 100%; height: auto; display: block; }
+.stats-chart .axis { stroke: var(--key-border); stroke-width: 1; }
+.stats-chart .tick { fill: var(--dim); font-size: 10px; }
+.stats-chart .tick.acc { fill: var(--correct); }
+.stats-chart .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.stats-chart .line.wpm { stroke: var(--accent); }
+.stats-chart .line.acc { stroke: var(--correct); opacity: 0.7; }
+.stats-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--dim); margin-top: 4px; }
+.stats-legend .lg.wpm { color: var(--accent); }
+.stats-legend .lg.acc { color: var(--correct); }
+.heatmap { display: flex; flex-direction: column; gap: 3px; align-items: center; }
+.hm-row { display: flex; gap: 3px; }
+.hm-key { width: 32px; height: 32px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-family: "SF Mono", Menlo, monospace; font-size: 13px; color: #fff; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+.hm-key.empty { background: var(--panel-2); color: var(--dim); text-shadow: none; font-weight: 400; }
+.stats-weak { text-align: center; font-size: 13px; color: var(--dim); margin: 10px 0 4px; }
+.stats-weak b { color: var(--wrong); font-family: "SF Mono", Menlo, monospace; letter-spacing: 2px; font-size: 15px; }
+@media (max-width: 480px) { .hm-key { width: 22px; height: 24px; font-size: 10px; } .hm-row { gap: 2px; } }
 .completion-course { margin: 0 0 18px; padding: 10px 14px; border-radius: 10px; font-weight: 600; background: rgba(158,206,106,0.14); color: var(--correct); }
 .completion-course.fail { background: rgba(224,175,104,0.14); color: var(--cursor); }
 .completion-card { background: var(--panel); border-radius: 18px; padding: 36px 40px; width: 90%; max-width: 460px; box-shadow: 0 24px 80px var(--panel-shadow), 0 0 60px rgba(122,162,247,0.2); text-align: center; animation: cardSlideUp 0.4s ease-out; }

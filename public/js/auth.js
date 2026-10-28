@@ -171,6 +171,14 @@ function addSidebarButtons(user) {
     group.appendChild(lbBtn);
   }
 
+  // Statistics (progress chart + mistakes heatmap) — for everyone; main.js opens it
+  const statsBtn = document.createElement('button');
+  statsBtn.className = 'small';
+  statsBtn.dataset.i18n = 'btn.stats';
+  statsBtn.textContent = t('btn.stats');
+  statsBtn.onclick = () => window.dispatchEvent(new CustomEvent('open-stats'));
+  group.appendChild(statsBtn);
+
   // Settings button — shown for ALL users (guests get guest settings modal)
   const settingsBtn = document.createElement('button');
   settingsBtn.className = 'small';

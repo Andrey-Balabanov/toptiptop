@@ -4,6 +4,8 @@ import { FINGER_NAMES, refreshFingerNames, fingerFor, fingerMovement, homeKeyFor
 import { buildText, modeToLang, buildAdaptiveText } from './texts.js';
 import { getLessons, buildLessonText, currentLessonIndex, recordLessonResult } from './course.js';
 import { todayProgress, currentStreak, GOAL_OPTIONS } from './daily.js';
+import { openStatsPanel } from './stats.js';
+import { weakLetters } from './texts.js';
 import * as sound from './sound.js';
 import * as effects from './effects.js';
 import * as progress from './progress.js';
@@ -698,6 +700,48 @@ function renderDaily() {
   }
 }
 
+/** Completion screen: letters missed most in this text and speed vs the recent average. */
+function showInsight(wpm, avgWpmBefore) {
+  const el = $('c-insight');
+  if (!el) return;
+  const parts = [];
+  const misses = Object.entries(state.missCounts || {}).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  if (misses.length) {
+    parts.push(t('result.missed_most') + ' ' + misses.map(([k, n]) => `<b>${k}</b> ×${n}`).join(', '));
+  } else {
+    parts.push(t('result.no_misses'));
+  }
+  if (avgWpmBefore != null) {
+    const diff = Math.round(wpm - avgWpmBefore);
+    const key = diff > 0 ? 'result.faster' : (diff < 0 ? 'result.slower' : 'result.same_speed');
+    parts.push(t(key).replace('{n}', Math.abs(diff)).replace('{avg}', Math.round(avgWpmBefore)));
+  }
+  el.innerHTML = parts.join(' · ');
+}
+
+/* Statistics window — opened from the sidebar (auth.js dispatches open-stats) */
+window.addEventListener('open-stats', () => {
+  openStatsPanel({
+    t,
+    lang: getLanguage() === 'ru' ? 'ru' : 'en',
+    keyStats: progress.getKeyStats(),
+    weakLetters: lang => weakLetters(progress.getKeyStats(), lang),
+    loadHistory: async () => {
+      if (api.isLoggedIn()) {
+        const sessions = await api.fetchSessions({ limit: 50 });
+        const list = Array.isArray(sessions) ? sessions : (sessions.sessions || []);
+        return list.filter(s => !s.isDraft).reverse();
+      }
+      return progress.getHistory().slice(-50);
+    },
+    onTrain: lang => {
+      $('mode').value = 'adaptive-' + lang;
+      refreshLessonSelect();
+      enterFocusMode();
+    },
+  });
+});
+
 /** Completion screen line when today's goal was just reached. */
 function showDailyResult(finished) {
   const el = $('c-daily');
@@ -777,6 +821,7 @@ function reset() {
   }
   state = createState(text);
   state.courseLesson = courseLesson;
+  state.missCounts = {};
   setLessonInfo(lessonInfo);
   // XP before this text: the server gets everything earned during it (chars, combos, completion)
   state.xpAtStart = progress.getProgress().xp;
@@ -919,6 +964,7 @@ async function finishSession() {
   });
   const xpEarned = finished.xpEarned;
   showDailyResult(finished);
+  showInsight(wpm, finished.avgWpmBefore);
   renderDaily();
   updateHeader();
   renderAchievements();
@@ -1123,6 +1169,10 @@ function handleKey(e) {
     state.totalErrors++;
     sound.playWrong();
     progress.onWrongChar(expected);
+    if (expected && expected.trim()) {
+      const k = expected.toLowerCase();
+      state.missCounts[k] = (state.missCounts[k] || 0) + 1;
+    }
     flashActualKey(key);
     if (accuracyMode) {
       // Stay on this letter until the right key is pressed
