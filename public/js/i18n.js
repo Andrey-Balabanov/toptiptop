@@ -95,6 +95,50 @@ const LOCALES = {
     'lesson.weak_letters': 'Тренируем ваши слабые буквы:',
     'lesson.no_data': 'Пока мало данных о ваших ошибках — печатайте обычные тексты, и тренажёр найдёт слабые буквы.',
     'btn.admin': 'Админ-панель',
+    'admin.page_title': 'TopTipTop — Админ-панель',
+    'admin.title': 'Админ-панель',
+    'admin.checking': 'Проверка доступа...',
+    'admin.to_trainer': 'К тренажёру',
+    'admin.filters': 'Фильтры пользователей',
+    'admin.search': 'Поиск',
+    'admin.search_placeholder': 'Имя или email',
+    'admin.banned_only': 'Только заблокированные',
+    'admin.refresh': 'Обновить',
+    'admin.users': 'Пользователи',
+    'admin.col_user': 'Пользователь',
+    'admin.col_role': 'Роль',
+    'admin.col_stats': 'Статистика',
+    'admin.col_state': 'Состояние',
+    'admin.col_actions': 'Действия',
+    'admin.empty': 'Пользователи не найдены.',
+    'admin.role_user': 'Пользователь',
+    'admin.role_admin': 'Администратор',
+    'admin.state_banned': 'Заблокирован',
+    'admin.state_active': 'Активен',
+    'admin.ban': 'Заблокировать',
+    'admin.unban': 'Разблокировать',
+    'admin.password': 'Пароль',
+    'admin.delete': 'Удалить',
+    'admin.no_email': 'email не указан',
+    'admin.registered': 'Регистрация: {date}',
+    'admin.sessions': 'Сессий: {n}',
+    'admin.loading': 'Загрузка...',
+    'admin.count': 'Пользователей: {n}',
+    'admin.load_error': 'Не удалось загрузить пользователей',
+    'admin.update_error': 'Не удалось обновить пользователя',
+    'admin.confirm_ban': 'Заблокировать пользователя?',
+    'admin.confirm_unban': 'Разблокировать пользователя?',
+    'admin.new_password': 'Новый пароль, минимум 6 символов:',
+    'admin.password_updated': 'Пароль обновлён',
+    'admin.password_error': 'Не удалось изменить пароль',
+    'admin.confirm_delete': 'Удалить пользователя и его сессии?',
+    'admin.delete_error': 'Не удалось удалить пользователя',
+    'admin.login_required_hint': 'Войдите в аккаунт с ролью администратора через главную страницу.',
+    'admin.login_required': 'Требуется вход',
+    'admin.admins_only': 'Доступ только для администраторов',
+    'admin.no_access': 'Нет доступа к админ-панели',
+    'admin.check_failed': 'Проверка доступа не пройдена',
+    'admin.check_env': 'Проверьте роль admin и переменные ADMIN_EMAIL / ADMIN_PASSWORD в Render.',
     'auth.session_check_failed': 'Не удалось проверить сессию. Обновите страницу.',
     'auth.password_placeholder': 'мин. 6',
     'unit.seconds_short': 'с',
@@ -446,6 +490,50 @@ const LOCALES = {
     'lesson.weak_letters': 'Practising your weak letters:',
     'lesson.no_data': 'Not enough data about your mistakes yet — type some regular texts and the trainer will find your weak letters.',
     'btn.admin': 'Admin Panel',
+    'admin.page_title': 'TopTipTop — Admin Panel',
+    'admin.title': 'Admin Panel',
+    'admin.checking': 'Checking access...',
+    'admin.to_trainer': 'Back to trainer',
+    'admin.filters': 'User filters',
+    'admin.search': 'Search',
+    'admin.search_placeholder': 'Name or email',
+    'admin.banned_only': 'Banned only',
+    'admin.refresh': 'Refresh',
+    'admin.users': 'Users',
+    'admin.col_user': 'User',
+    'admin.col_role': 'Role',
+    'admin.col_stats': 'Stats',
+    'admin.col_state': 'Status',
+    'admin.col_actions': 'Actions',
+    'admin.empty': 'No users found.',
+    'admin.role_user': 'User',
+    'admin.role_admin': 'Administrator',
+    'admin.state_banned': 'Banned',
+    'admin.state_active': 'Active',
+    'admin.ban': 'Ban',
+    'admin.unban': 'Unban',
+    'admin.password': 'Password',
+    'admin.delete': 'Delete',
+    'admin.no_email': 'no email',
+    'admin.registered': 'Registered: {date}',
+    'admin.sessions': 'Sessions: {n}',
+    'admin.loading': 'Loading...',
+    'admin.count': 'Users: {n}',
+    'admin.load_error': 'Could not load users',
+    'admin.update_error': 'Could not update the user',
+    'admin.confirm_ban': 'Ban this user?',
+    'admin.confirm_unban': 'Unban this user?',
+    'admin.new_password': 'New password, at least 6 characters:',
+    'admin.password_updated': 'Password updated',
+    'admin.password_error': 'Could not change the password',
+    'admin.confirm_delete': 'Delete this user and their sessions?',
+    'admin.delete_error': 'Could not delete the user',
+    'admin.login_required_hint': 'Log in with an administrator account on the main page.',
+    'admin.login_required': 'Login required',
+    'admin.admins_only': 'Administrators only',
+    'admin.no_access': 'No access to the admin panel',
+    'admin.check_failed': 'Access check failed',
+    'admin.check_env': 'Check the admin role and the ADMIN_EMAIL / ADMIN_PASSWORD variables on Render.',
     'auth.session_check_failed': 'Could not verify your session. Please reload the page.',
     'auth.password_placeholder': 'min. 6',
     'unit.seconds_short': 's',
@@ -776,8 +864,8 @@ export function applyLanguageToDOM() {
     el.textContent = t(key);
   });
 
-  // Update document title
-  document.title = t('app.title');
+  // Update document title (a page can name its own key, e.g. the admin panel)
+  document.title = t(document.documentElement.dataset.i18nTitleKey || 'app.title');
 
   // Update placeholders
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
@@ -785,9 +873,12 @@ export function applyLanguageToDOM() {
     el.placeholder = t(key);
   });
 
-  // Update tooltips
+  // Update tooltips and accessible names
   document.querySelectorAll('[data-i18n-title]').forEach(el => {
     el.title = t(el.dataset.i18nTitle);
+  });
+  document.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
+    el.setAttribute('aria-label', t(el.dataset.i18nAriaLabel));
   });
 
   // Update text-display overlay hint (data-hint-text)

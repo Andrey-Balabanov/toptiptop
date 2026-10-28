@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-i18n-title-key="admin.page_title">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,43 +11,43 @@
   <header class="admin-header">
     <div>
       <p class="eyebrow">TopTipTop / control room</p>
-      <h1>Админ-панель</h1>
-      <p id="admin-identity" class="muted">Проверка доступа...</p>
+      <h1 data-i18n="admin.title">Админ-панель</h1>
+      <p id="admin-identity" class="muted" data-i18n="admin.checking">Проверка доступа...</p>
     </div>
     <div class="header-actions">
-      <a class="button ghost" href="/">К тренажёру</a>
-      <button class="button ghost" id="logout-button" type="button">Выйти</button>
+      <a class="button ghost" href="/" data-i18n="admin.to_trainer">К тренажёру</a>
+      <button class="button ghost" id="logout-button" type="button" data-i18n="auth.logout">Выйти</button>
     </div>
   </header>
 
-  <section class="toolbar" aria-label="Фильтры пользователей">
+  <section class="toolbar" aria-label="Фильтры пользователей" data-i18n-aria-label="admin.filters">
     <label class="search-field">
-      <span>Поиск</span>
-      <input id="search-input" type="search" placeholder="Имя или email" autocomplete="off">
+      <span data-i18n="admin.search">Поиск</span>
+      <input id="search-input" type="search" placeholder="Имя или email" data-i18n-placeholder="admin.search_placeholder" autocomplete="off">
     </label>
     <label class="check-field">
       <input id="banned-only" type="checkbox">
-      <span>Только заблокированные</span>
+      <span data-i18n="admin.banned_only">Только заблокированные</span>
     </label>
-    <button class="button primary" id="refresh-button" type="button">Обновить</button>
+    <button class="button primary" id="refresh-button" type="button" data-i18n="admin.refresh">Обновить</button>
   </section>
 
   <p id="status" class="status" role="status"></p>
 
-  <section class="table-wrap" aria-label="Пользователи">
+  <section class="table-wrap" aria-label="Пользователи" data-i18n-aria-label="admin.users">
     <table>
       <thead>
         <tr>
-          <th>Пользователь</th>
-          <th>Роль</th>
-          <th>Статистика</th>
-          <th>Состояние</th>
-          <th class="actions-heading">Действия</th>
+          <th data-i18n="admin.col_user">Пользователь</th>
+          <th data-i18n="admin.col_role">Роль</th>
+          <th data-i18n="admin.col_stats">Статистика</th>
+          <th data-i18n="admin.col_state">Состояние</th>
+          <th class="actions-heading" data-i18n="admin.col_actions">Действия</th>
         </tr>
       </thead>
       <tbody id="users-body"></tbody>
     </table>
-    <div id="empty-state" class="empty-state" hidden>Пользователи не найдены.</div>
+    <div id="empty-state" class="empty-state" hidden data-i18n="admin.empty">Пользователи не найдены.</div>
   </section>
 </main>
 <script type="module" src="js/admin.js"></script>
