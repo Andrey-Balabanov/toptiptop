@@ -765,6 +765,7 @@ export function getAvailableLanguages() {
  * Elements with child elements are SKIPPED to avoid destroying their structure.
  */
 export function applyLanguageToDOM() {
+  document.documentElement.lang = currentLang;
   document.querySelectorAll('[data-i18n]').forEach(el => {
     // Skip elements that have non-text child nodes (e.g. <kbd>, <b>, <span> inside)
     // These elements must be translated via dedicated functions.

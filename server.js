@@ -108,8 +108,11 @@ app.use('/api', generalLimiter);
 // JS/CSS assets always revalidate via ETag (cheap 304s) so a deploy never mixes
 // new JS with a stale stylesheet; index.html keeps default ETag revalidation too.
 const publicDir = path.resolve(__dirname, 'public');
+app.get('/index.html', (req, res) => res.redirect(301, '/'));
 app.use(express.static(publicDir, {
   etag: true,
+  // index.html is served by the SPA route below so the site address can be filled in
+  index: false,
   setHeaders(res, filePath) {
     const ext = path.extname(filePath).toLowerCase();
     if (ext === '.js' || ext === '.css') {
@@ -136,15 +139,54 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.resolve(publicDir, 'admin.html'));
 });
 
+/** Public address of the site: PUBLIC_URL if set, else derived from the request (proxy-aware). */
+function siteOrigin(req) {
+  return (process.env.PUBLIC_URL || `${req.protocol}://${req.get('host')}`).replace(/\/+$/, '');
+}
+
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin\n\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`);
+});
+
+app.get('/sitemap.xml', (req, res) => {
+  res.type('application/xml').send(
+    '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+    `  <url><loc>${siteOrigin(req)}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>\n` +
+    '</urlset>\n'
+  );
+});
+
+/**
+ * Optional privacy-friendly analytics (Plausible, Umami or compatible), off by default:
+ * set ANALYTICS_SCRIPT_URL (and ANALYTICS_SITE_ID for Umami / data-domain for Plausible).
+ */
+function analyticsTag() {
+  const src = process.env.ANALYTICS_SCRIPT_URL;
+  if (!src || !/^https:\/\//.test(src)) return '';
+  const id = process.env.ANALYTICS_SITE_ID;
+  const attr = id ? ` data-domain="${id.replace(/"/g, '')}" data-website-id="${id.replace(/"/g, '')}"` : '';
+  return `<script defer src="${src.replace(/"/g, '')}"${attr}></script>`;
+}
+
+let indexTemplate = null;
+function renderIndex(req) {
+  if (indexTemplate === null || process.env.NODE_ENV !== 'production') {
+    indexTemplate = fs.readFileSync(path.resolve(publicDir, 'index.html'), 'utf8');
+  }
+  return indexTemplate
+    .replace(/__ORIGIN__/g, siteOrigin(req))
+    .replace('<!--ANALYTICS-->', analyticsTag());
+}
+
 // SPA fallback — serve index.html for all non-API routes
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ error: 'Неизвестный маршрут' });
   }
-  const indexPath = path.resolve(publicDir, 'index.html');
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
+  try {
+    res.set('Cache-Control', 'no-cache').type('html').send(renderIndex(req));
+  } catch {
     res.status(404).json({ error: 'Файл index.html не найден' });
   }
 });

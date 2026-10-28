@@ -9,6 +9,7 @@ import { showOnboarding, hasSeenOnboarding } from './onboarding.js';
 import { shareResult } from './share.js';
 import { weeklyText, weeklyMode, weekKey } from './challenge.js';
 import { openGroupsPanel, openRaceLobby, RaceSession } from './social.js';
+import { track } from './analytics.js';
 import { weakLetters } from './texts.js';
 import * as sound from './sound.js';
 import * as effects from './effects.js';
@@ -770,6 +771,7 @@ window.addEventListener('contrast-toggled', (e) => {
 
 /* First-visit guide (also reopened from the sidebar) */
 function startCourseFromGuide() {
+  track('onboarding_course_started');
   $('mode').value = getLanguage() === 'ru' ? 'course-ru' : 'course-en';
   refreshLessonSelect();
   enterFocusMode();
@@ -833,6 +835,7 @@ window.addEventListener('open-race', () => {
     onLogin: () => showAuthModal('login'),
     makeText: () => buildText(lang, 'short', currentProfile, lang),
     onEnter: room => {
+      track('race_started', { players: room.players.length });
       leaveRaceIfAny();
       race = new RaceSession(room, { t, onUpdate: raceFinished });
       enterFocusMode();
@@ -1101,6 +1104,8 @@ async function finishSession() {
   renderAchievements();
 
   showCourseResult(mode, wpm, accuracy);
+  // Mode family only (e.g. "weekly", "course") — no personal data
+  track('text_finished', { mode: mode.split(/[-@]/)[0], wpm_bucket: Math.min(150, Math.floor(wpm / 10) * 10) });
 
   // Show completion overlay
   showCompletionOverlay(wpm, accuracy, wrongCount, xpEarned, elapsed);
@@ -1170,6 +1175,7 @@ function showCourseResult(mode, wpm, accuracy) {
   const r = recordLessonResult(progress.getCourse(), lang, state.courseLesson, wpm, accuracy);
   progress.setCourse(r.progress);
   const total = getLessons(lang).length;
+  if (r.unlocked) track('course_lesson_passed', { lang, lesson: state.courseLesson + 1 });
   if (r.unlocked && state.courseLesson + 1 < total) {
     el.textContent = t('course.unlocked').replace('{n}', state.courseLesson + 2);
   } else if (r.unlocked) {
@@ -1618,6 +1624,7 @@ function init() {
     shareBtn.addEventListener('click', async () => {
       if (!lastResult) return;
       const how = await shareResult(lastResult, t);
+      track('result_shared', { how });
       if (how === 'downloaded') shareBtn.textContent = t('share.saved');
     });
   }

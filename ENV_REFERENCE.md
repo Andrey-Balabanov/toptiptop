@@ -119,9 +119,16 @@ copy .env.example .env
 | `NODE_ENV` | — | — | ❌ | `dashboard` (для прода) | `server.js` — читается **напрямую** (CORS + защита JWT) |
 | `TRUST_PROXY` | — | — | ❌ | `dashboard` | `server.js` — читается **напрямую** (реальный IP за прокси) |
 | `FRONTEND_URL` | — | — | ❌ | `dashboard` | `server.js` — читается **напрямую** (белый список CORS в проде) |
+| `PUBLIC_URL` | адрес из запроса | — | ❌ | `dashboard` | `server.js` — адрес сайта в превью ссылок (Open Graph), `canonical`, `robots.txt`, `sitemap.xml`. Задайте свой домен, напр. `https://toptiptop.onrender.com` |
+| `ANALYTICS_SCRIPT_URL` | — (аналитика выключена) | — | ❌ | `dashboard` | `server.js` — скрипт приватной аналитики без cookies, напр. `https://plausible.io/js/script.js` или скрипт Umami (только `https://`) |
+| `ANALYTICS_SITE_ID` | — | — | ❌ | `dashboard` | `server.js` — домен сайта для Plausible или website ID для Umami |
 
-> 💡 `NODE_ENV`, `TRUST_PROXY`, `FRONTEND_URL` **не проходят** через `src/config.js` —
+> 💡 `NODE_ENV`, `TRUST_PROXY`, `FRONTEND_URL`, `PUBLIC_URL`, `ANALYTICS_*` **не проходят** через `src/config.js` —
 > `server.js` читает их из `process.env` напрямую.
+>
+> 📊 Аналитика: при заданном `ANALYTICS_SCRIPT_URL` приложение отправляет обезличенные события
+> (`text_finished`, `course_lesson_passed`, `result_shared`, `race_started`, `onboarding_course_started`)
+> без имён, почты и текстов — см. `public/js/analytics.js`.
 
 ---
 
