@@ -12,6 +12,11 @@
     if (savedTheme === 'light') {
       document.documentElement.classList.add('light-theme');
     }
+    // High contrast: the user's choice, else the system "increase contrast" setting
+    var contrast = localStorage.getItem('toptip-high-contrast');
+    if (contrast === 'true' || (contrast === null && window.matchMedia && matchMedia('(prefers-contrast: more)').matches)) {
+      document.documentElement.classList.add('high-contrast');
+    }
   } catch(e) {}
 </script>
 </head>

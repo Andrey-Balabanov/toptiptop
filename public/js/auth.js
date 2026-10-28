@@ -97,6 +97,38 @@ function renderGuestBar() {
 }
 
 /**
+ * A sidebar on/off button persisted in localStorage. Its label comes from
+ * `${i18nPrefix}_on` / `${i18nPrefix}_off`; clicking dispatches `event` with
+ * `{ show, on }` (both the new state) for whoever applies the setting.
+ */
+function makeToggle({ storageKey, defaultOn, i18nPrefix, event, titleKey }) {
+  const read = () => {
+    const v = localStorage.getItem(storageKey);
+    return v === null ? defaultOn : v === 'true';
+  };
+  const btn = document.createElement('button');
+  btn.className = 'small toggle';
+  if (titleKey) {
+    btn.dataset.i18nTitle = titleKey;
+    btn.title = t(titleKey);
+  }
+  const setState = on => {
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.dataset.i18n = i18nPrefix + (on ? '_on' : '_off');
+    btn.textContent = t(btn.dataset.i18n);
+  };
+  setState(read());
+  btn.onclick = () => {
+    const next = !read();
+    localStorage.setItem(storageKey, next ? 'true' : 'false');
+    setState(next);
+    window.dispatchEvent(new CustomEvent(event, { detail: { show: next, on: next } }));
+  };
+  return btn;
+}
+
+/**
  * Add secondary action buttons to the controls sidebar area:
  * history, leaderboard, arrows toggle, and settings.
  * History and leaderboard are logged-in only; settings and arrows are for ALL users.
@@ -115,43 +147,24 @@ function addSidebarButtons(user) {
   group.id = 'sidebar-btn-group';
   group.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;';
 
-  // Arrow toggle — label and highlight show the state (e.g. "↕ Arrows: on" / "↕ Стрелки: выкл")
-  const arrowBtn = document.createElement('button');
-  arrowBtn.className = 'small toggle';
-  const setArrowState = on => {
-    arrowBtn.classList.toggle('active', on);
-    arrowBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
-    arrowBtn.dataset.i18n = on ? 'btn.arrows_on' : 'btn.arrows_off';
-    arrowBtn.textContent = t(arrowBtn.dataset.i18n);
-  };
-  setArrowState(localStorage.getItem('toptip-show-arrows') !== 'false');
-  arrowBtn.onclick = () => {
-    const next = localStorage.getItem('toptip-show-arrows') === 'false';
-    localStorage.setItem('toptip-show-arrows', next ? 'true' : 'false');
-    setArrowState(next);
-    window.dispatchEvent(new CustomEvent('arrows-toggled', { detail: { show: next } }));
-  };
-  group.appendChild(arrowBtn);
-
-  // "No mistakes" toggle — the cursor waits on a wrong key until the right one is pressed
-  const accBtn = document.createElement('button');
-  accBtn.className = 'small toggle';
-  accBtn.dataset.i18nTitle = 'title.accuracy_mode';
-  accBtn.title = t('title.accuracy_mode');
-  const setAccState = on => {
-    accBtn.classList.toggle('active', on);
-    accBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
-    accBtn.dataset.i18n = on ? 'btn.accuracy_on' : 'btn.accuracy_off';
-    accBtn.textContent = t(accBtn.dataset.i18n);
-  };
-  setAccState(localStorage.getItem('toptip-accuracy-mode') === 'true');
-  accBtn.onclick = () => {
-    const next = localStorage.getItem('toptip-accuracy-mode') !== 'true';
-    localStorage.setItem('toptip-accuracy-mode', next ? 'true' : 'false');
-    setAccState(next);
-    window.dispatchEvent(new CustomEvent('accuracy-mode-toggled', { detail: { on: next } }));
-  };
-  group.appendChild(accBtn);
+  // On/off toggles — label and highlight show the state (e.g. "↕ Arrows: on" / "↕ Стрелки: выкл")
+  group.appendChild(makeToggle({
+    storageKey: 'toptip-show-arrows', defaultOn: true, i18nPrefix: 'btn.arrows', event: 'arrows-toggled',
+  }));
+  // "No mistakes": the cursor waits on a wrong key until the right one is pressed
+  group.appendChild(makeToggle({
+    storageKey: 'toptip-accuracy-mode', defaultOn: false, i18nPrefix: 'btn.accuracy', event: 'accuracy-mode-toggled',
+    titleKey: 'title.accuracy_mode',
+  }));
+  // On-screen keyboard while typing (hide it once the layout is learned)
+  group.appendChild(makeToggle({
+    storageKey: 'toptip-show-keyboard', defaultOn: true, i18nPrefix: 'btn.keyboard', event: 'keyboard-toggled',
+    titleKey: 'title.keyboard',
+  }));
+  // High-contrast colours
+  group.appendChild(makeToggle({
+    storageKey: 'toptip-high-contrast', defaultOn: false, i18nPrefix: 'btn.contrast', event: 'contrast-toggled',
+  }));
 
   // History button (logged-in only) — text from i18n already includes 📊
   if (api.isLoggedIn()) {
@@ -178,6 +191,14 @@ function addSidebarButtons(user) {
   statsBtn.textContent = t('btn.stats');
   statsBtn.onclick = () => window.dispatchEvent(new CustomEvent('open-stats'));
   group.appendChild(statsBtn);
+
+  // How-to guide (the first-visit cards)
+  const guideBtn = document.createElement('button');
+  guideBtn.className = 'small';
+  guideBtn.dataset.i18n = 'btn.guide';
+  guideBtn.textContent = t('btn.guide');
+  guideBtn.onclick = () => window.dispatchEvent(new CustomEvent('open-onboarding'));
+  group.appendChild(guideBtn);
 
   // Settings button — shown for ALL users (guests get guest settings modal)
   const settingsBtn = document.createElement('button');

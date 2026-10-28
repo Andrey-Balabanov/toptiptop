@@ -5,6 +5,7 @@ import { buildText, modeToLang, buildAdaptiveText } from './texts.js';
 import { getLessons, buildLessonText, currentLessonIndex, recordLessonResult } from './course.js';
 import { todayProgress, currentStreak, GOAL_OPTIONS } from './daily.js';
 import { openStatsPanel } from './stats.js';
+import { showOnboarding, hasSeenOnboarding } from './onboarding.js';
 import { weakLetters } from './texts.js';
 import * as sound from './sound.js';
 import * as effects from './effects.js';
@@ -718,6 +719,26 @@ function showInsight(wpm, avgWpmBefore) {
   }
   el.innerHTML = parts.join(' · ');
 }
+
+/* ============ DISPLAY PREFERENCES (sidebar toggles in auth.js) ============ */
+
+function applyKeyboardVisibility() {
+  let show = true;
+  try { show = localStorage.getItem('toptip-show-keyboard') !== 'false'; } catch {}
+  document.querySelector('.app')?.classList.toggle('hide-keyboard', !show);
+}
+window.addEventListener('keyboard-toggled', applyKeyboardVisibility);
+window.addEventListener('contrast-toggled', (e) => {
+  document.documentElement.classList.toggle('high-contrast', e.detail.on);
+});
+
+/* First-visit guide (also reopened from the sidebar) */
+function startCourseFromGuide() {
+  $('mode').value = getLanguage() === 'ru' ? 'course-ru' : 'course-en';
+  refreshLessonSelect();
+  enterFocusMode();
+}
+window.addEventListener('open-onboarding', () => showOnboarding({ t, onStartCourse: startCourseFromGuide }));
 
 /* Statistics window — opened from the sidebar (auth.js dispatches open-stats) */
 window.addEventListener('open-stats', () => {
@@ -1515,6 +1536,8 @@ function init() {
   }
   refreshLessonSelect();
   renderDaily();
+  applyKeyboardVisibility();
+  if (!hasSeenOnboarding()) showOnboarding({ t, onStartCourse: startCourseFromGuide });
   if (lengthSelect) {
     lengthSelect.addEventListener('change', () => {
       if (document.querySelector('.app.focus-mode')) {

@@ -450,6 +450,42 @@ body {
 .focus-stats .fs-item { font-size: 12px; color: var(--dim); white-space: nowrap; }
 .focus-stats .fs-item b { color: var(--accent); font-weight: 600; font-size: 14px; margin-left: 3px; font-variant-numeric: tabular-nums; }
 
+/* ============ HIDDEN KEYBOARD (sidebar toggle) ============ */
+.app.focus-mode.hide-keyboard .keyboard,
+.app.focus-mode.hide-keyboard .layout-row { display: none !important; }
+
+/* ============ HIGH CONTRAST ============ */
+:root.high-contrast {
+  --text: #ffffff;
+  --dim: #b4bce0;
+  --panel: #10121a;
+  --panel-2: #1c1f2c;
+  --key-border: #6b74a0;
+  --key-text: #ffffff;
+  --bg: #000000;
+}
+:root.high-contrast.light-theme {
+  --text: #000000;
+  --dim: #2e3440;
+  --panel: #ffffff;
+  --panel-2: #eef0f4;
+  --key-border: #5b6274;
+  --key-text: #000000;
+  --bg: #ffffff;
+}
+:root.high-contrast .char.current { outline: 2px solid var(--text); }
+:root.high-contrast .char.wrong { text-decoration: underline wavy; }
+
+/* ============ ONBOARDING ============ */
+.onboarding-card { max-width: 440px !important; text-align: center; }
+.onb-icon { font-size: 44px; margin-bottom: 6px; }
+.onb-text { color: var(--dim); line-height: 1.55; font-size: 15px; margin: 0 0 16px; }
+.onb-text b { color: var(--text); }
+.onb-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 14px; }
+.onb-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--panel-2); }
+.onb-dots span.on { background: var(--accent); }
+.onboarding-card .modal-actions { justify-content: center; }
+
 /* ============ DAILY GOAL ============ */
 .daily { width: 100%; margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
 .daily-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim); }
