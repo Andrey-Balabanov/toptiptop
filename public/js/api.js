@@ -95,7 +95,10 @@ async function request(method, path, body = null) {
     }
   }
   // All retries exhausted - queue for later sync
-  if (!path.startsWith('/auth/') && !path.endsWith('/reset-password')) {
+  // Only progress-type writes are worth replaying later; live races and groups are not
+  const replayable = !path.startsWith('/auth/') && !path.endsWith('/reset-password') &&
+    !path.startsWith('/races') && !path.startsWith('/groups') && method !== 'GET';
+  if (replayable) {
     queueForLater({ method, path, body });
   }
   throw lastErr;
@@ -169,6 +172,51 @@ export function updateKeyboardLayout(layout) {
 
 export function updateProgress(data) {
   return request('PATCH', '/users/me/progress', data);
+}
+
+/* Groups (friends / class / team) */
+export function fetchGroups() {
+  return request('GET', '/groups');
+}
+export function createGroup(name) {
+  return request('POST', '/groups', { name });
+}
+export function joinGroup(code) {
+  return request('POST', '/groups/join', { code });
+}
+export function fetchGroup(id) {
+  return request('GET', '/groups/' + encodeURIComponent(id));
+}
+export function leaveGroup(id) {
+  return request('DELETE', '/groups/' + encodeURIComponent(id) + '/members/me');
+}
+export function removeGroupMember(id, userId) {
+  return request('DELETE', '/groups/' + encodeURIComponent(id) + '/members/' + encodeURIComponent(userId));
+}
+
+/* Weekly challenge */
+export function fetchWeeklyChallenge(lang) {
+  return request('GET', '/users/challenge/weekly?lang=' + encodeURIComponent(lang));
+}
+
+/* Live races */
+export function createRace(text, lang) {
+  return request('POST', '/races', { text, lang });
+}
+export function fetchRace(code) {
+  return request('GET', '/races/' + encodeURIComponent(code));
+}
+export function joinRace(code) {
+  return request('POST', '/races/' + encodeURIComponent(code) + '/join');
+}
+export function startRace(code) {
+  return request('POST', '/races/' + encodeURIComponent(code) + '/start');
+}
+export function reportRaceProgress(code, pos, errors) {
+  return request('POST', '/races/' + encodeURIComponent(code) + '/progress', { pos, errors });
+}
+export function leaveRace(code) {
+  return request('POST', '/races/' + encodeURIComponent(code) + '/leave');
 }
 
 /* Session endpoints */

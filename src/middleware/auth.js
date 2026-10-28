@@ -65,4 +65,16 @@ function adminMiddleware(req, res, next) {
   next();
 }
 
-module.exports = { authMiddleware, adminMiddleware };
+/** The caller's user id when a valid token is present, else null (for public routes). */
+function optionalUserId(req) {
+  const token = getAuthToken(req);
+  if (!token) return null;
+  try {
+    const payload = jwt.verify(token, config.jwtSecret);
+    return payload && payload.userId ? payload.userId : null;
+  } catch {
+    return null;
+  }
+}
+
+module.exports = { authMiddleware, adminMiddleware, optionalUserId };

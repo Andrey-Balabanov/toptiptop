@@ -82,6 +82,25 @@ function migrate() {
 
     -- Cover the leaderboard sorted by total_xp (previously a full sort).
     CREATE INDEX IF NOT EXISTS idx_users_total_xp ON users(total_xp DESC);
+
+    -- Groups of friends / a class / a team with a private leaderboard
+    CREATE TABLE IF NOT EXISTS user_groups (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      name        TEXT NOT NULL,
+      code        TEXT UNIQUE NOT NULL,
+      owner_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS group_members (
+      group_id   INTEGER NOT NULL REFERENCES user_groups(id) ON DELETE CASCADE,
+      user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      joined_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (group_id, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_group_members_user ON group_members(user_id);
+
+    -- Weekly challenge leaderboard: best run per user for one week's mode
+    CREATE INDEX IF NOT EXISTS idx_sessions_mode_wpm ON sessions(mode, wpm DESC);
   `);
 
   // Add new columns if they don't exist (safe migration)

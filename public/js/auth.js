@@ -192,6 +192,16 @@ function addSidebarButtons(user) {
   statsBtn.onclick = () => window.dispatchEvent(new CustomEvent('open-stats'));
   group.appendChild(statsBtn);
 
+  // Groups (friends / class / team) and live races — main.js opens them
+  for (const [key, event] of [['btn.groups', 'open-groups'], ['btn.race', 'open-race']]) {
+    const btn = document.createElement('button');
+    btn.className = 'small';
+    btn.dataset.i18n = key;
+    btn.textContent = t(key);
+    btn.onclick = () => window.dispatchEvent(new CustomEvent(event));
+    group.appendChild(btn);
+  }
+
   // How-to guide (the first-visit cards)
   const guideBtn = document.createElement('button');
   guideBtn.className = 'small';

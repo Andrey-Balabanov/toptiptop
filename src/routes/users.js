@@ -8,6 +8,8 @@ const {
   mergeUserProgress,
 } = require('../services/auth');
 const { getLeaderboard } = require('../services/sessions');
+const { getWeeklyLeaderboard } = require('../services/challenge');
+const { optionalUserId } = require('../middleware/auth');
 
 const router = Router();
 
@@ -153,6 +155,17 @@ router.get('/leaderboard', (req, res) => {
   } catch (err) {
     console.error('Leaderboard error:', err);
     res.status(500).json({ error: 'Ошибка загрузки лидерборда' });
+  }
+});
+
+// Weekly challenge leaderboard (no auth required; logged-in callers also get their own place)
+router.get('/challenge/weekly', (req, res) => {
+  try {
+    const lang = req.query.lang === 'en' ? 'en' : 'ru';
+    res.json(getWeeklyLeaderboard(lang, optionalUserId(req)));
+  } catch (err) {
+    console.error('Weekly challenge error:', err);
+    res.status(500).json({ error: 'Ошибка загрузки испытания недели' });
   }
 });
 

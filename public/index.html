@@ -90,6 +90,8 @@
   <div class="controls-row" id="controls">
     <button class="primary" id="reset" data-i18n="btn.new_text">Новый текст</button>
     <select id="mode">
+      <option value="weekly-ru" data-i18n="weekly.ru">🏆 Испытание недели (рус)</option>
+      <option value="weekly-en" data-i18n="weekly.en">🏆 Испытание недели (англ)</option>
       <option value="course-ru" data-i18n="course.ru">Курс: русский</option>
       <option value="course-en" data-i18n="course.en">Курс: английский</option>
       <option value="drill-home-ru" data-i18n="drill.home_ru">Упр: дом. ряд (рус)</option>
@@ -131,6 +133,9 @@
     <span class="fs-item" id="fs-time-label"><span data-i18n="stats.time">Время</span> <b id="fs-time">0s</b></span>
     <span class="fs-item" id="fs-errors-label"><span data-i18n="stats.errors">Ошибки</span> <b id="fs-errors">0</b></span>
   </div>
+
+  <!-- Live race: other players' progress -->
+  <div class="race-bar hidden" id="race-bar"></div>
 
   <!-- Lesson note (e.g. weak letters of an adaptive lesson) -->
   <div class="lesson-info hidden" id="lesson-info"></div>
@@ -197,6 +202,7 @@
     <div class="completion-insight" id="c-insight"></div>
     <div class="completion-course hidden" id="c-course"></div>
     <div class="completion-course hidden" id="c-daily"></div>
+    <div class="completion-course hidden" id="c-race"></div>
     <div class="completion-actions">
       <button class="primary-btn" id="btn-next-text" data-i18n="btn.next_text">Следующий текст →</button>
       <button class="ghost-btn" id="btn-share" data-i18n="btn.share">📤 Поделиться</button>

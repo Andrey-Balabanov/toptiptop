@@ -7,6 +7,8 @@ import { todayProgress, currentStreak, GOAL_OPTIONS } from './daily.js';
 import { openStatsPanel } from './stats.js';
 import { showOnboarding, hasSeenOnboarding } from './onboarding.js';
 import { shareResult } from './share.js';
+import { weeklyText, weeklyMode, weekKey } from './challenge.js';
+import { openGroupsPanel, openRaceLobby, RaceSession } from './social.js';
 import { weakLetters } from './texts.js';
 import * as sound from './sound.js';
 import * as effects from './effects.js';
@@ -741,6 +743,70 @@ function startCourseFromGuide() {
 }
 window.addEventListener('open-onboarding', () => showOnboarding({ t, onStartCourse: startCourseFromGuide }));
 
+/* ============ SOCIAL: GROUPS, WEEKLY CHALLENGE, RACES ============ */
+
+let currentUserId = null;
+let race = null;
+
+function leaveRaceIfAny() {
+  if (race) {
+    race.stop();
+    race = null;
+  }
+  const el = $('c-race');
+  if (el) el.classList.add('hidden');
+}
+
+/** Results screen: your place in this week's challenge (logged in) or how to get one. */
+async function showWeeklyPlace(lang) {
+  const el = $('c-race');
+  if (!el) return;
+  el.classList.remove('hidden', 'fail');
+  if (!api.isLoggedIn()) {
+    el.textContent = t('weekly.login_to_rank');
+    return;
+  }
+  el.textContent = t('stats.loading');
+  try {
+    const board = await api.fetchWeeklyChallenge(lang);
+    el.textContent = board.me
+      ? t('weekly.place').replace('{place}', board.me.rank).replace('{total}', board.total).replace('{wpm}', Math.round(board.me.wpm))
+      : t('weekly.not_ranked').replace('{acc}', 90);
+  } catch {
+    el.classList.add('hidden');
+  }
+}
+
+function raceFinished(room) {
+  const el = $('c-race');
+  if (!el || !state || !state.finished) return;
+  el.classList.remove('hidden', 'fail');
+  const me = room.players.find(p => p.id === currentUserId);
+  el.textContent = me && me.place
+    ? t('race.your_place').replace('{place}', me.place).replace('{n}', room.players.length)
+    : t('race.waiting_others');
+}
+
+window.addEventListener('open-groups', () => {
+  openGroupsPanel({ t, onLogin: () => showAuthModal('login') });
+});
+
+window.addEventListener('open-race', () => {
+  const lang = modeToLang($('mode').value) === 'en' ? 'en' : 'ru';
+  openRaceLobby({
+    t,
+    lang,
+    meId: currentUserId,
+    onLogin: () => showAuthModal('login'),
+    makeText: () => buildText(lang, 'short', currentProfile, lang),
+    onEnter: room => {
+      leaveRaceIfAny();
+      race = new RaceSession(room, { t, onUpdate: raceFinished });
+      enterFocusMode();
+    },
+  });
+});
+
 /* Statistics window — opened from the sidebar (auth.js dispatches open-stats) */
 window.addEventListener('open-stats', () => {
   openStatsPanel({
@@ -824,7 +890,14 @@ function reset() {
   let lessonInfo = '';
   let text;
   let courseLesson = null;
-  if (mode.startsWith('course-')) {
+  if (race) {
+    // Everyone in the race types the same text from the room
+    text = race.text;
+    lessonInfo = t('race.info');
+  } else if (mode.startsWith('weekly-')) {
+    text = weeklyText(lang);
+    lessonInfo = t('weekly.info').replace('{week}', weekKey());
+  } else if (mode.startsWith('course-')) {
     const lessons = getLessons(lang);
     courseLesson = Number($('course-lesson').value);
     if (!Number.isInteger(courseLesson)) courseLesson = currentLessonIndex(progress.getCourse(), lang);
@@ -975,7 +1048,10 @@ function renderAchievements() {
 async function finishSession() {
   if (!state) return;
   const wpm = updateStats();
-  const mode = $('mode').value;
+  const selectedMode = $('mode').value;
+  // Weekly challenge runs are saved under the week's mode so the server can rank them
+  const mode = race ? 'race'
+    : selectedMode.startsWith('weekly-') ? weeklyMode(modeToLang(selectedMode)) : selectedMode;
 
   const elapsed = state.startTime ? (Date.now() - state.startTime) : 0;
   const wrongCount = state.errors.filter(Boolean).length;
@@ -1015,6 +1091,7 @@ async function finishSession() {
       console.warn('Session save to server failed, queued:', err.message);
     }
   }
+  if (selectedMode.startsWith('weekly-') && !race) showWeeklyPlace(modeToLang(selectedMode));
 }
 
 /* ============ COMPLETION OVERLAY ============ */
@@ -1105,6 +1182,7 @@ function enterFocusMode() {
 function exitFocusMode() {
   const app = document.querySelector('.app');
   if (!app) return;
+  leaveRaceIfAny();
 
   app.classList.remove('focus-mode');
   app.classList.add('start-mode');
@@ -1155,10 +1233,13 @@ function handleKey(e) {
 
   // Only handle keys when in focus-mode with active state
   if (!state || !document.querySelector('.app.focus-mode')) return;
+  // In a race the text is fixed and typing waits for the shared start
+  if (race && (e.key === 'Escape' || e.key === 'Tab')) { e.preventDefault(); return; }
   if (e.key === 'Escape') { reset(); textEl.focus(); return; }
   if (e.key === 'Tab') { e.preventDefault(); reset(); textEl.focus(); return; }
   if (state.finished) return;
   if (document.activeElement !== textEl) return;
+  if (race && !race.started()) { e.preventDefault(); return; }
 
   if (e.key === 'Backspace') {
     e.preventDefault();
@@ -1224,6 +1305,7 @@ function handleKey(e) {
   );
 
   state.pos++;
+  if (race) race.report(state.pos, state.totalErrors);
   if (state.pos >= state.text.length) {
     state.finished = true;
     sound.playAchievement();
@@ -1316,6 +1398,7 @@ let wasLoggedIn = false;
 window.addEventListener('auth-login', (e) => {
   const user = e.detail.user;
   wasLoggedIn = true;
+  currentUserId = user.id;
 
   // Reload progress from server
   progress.initFromServer(user);
@@ -1354,6 +1437,7 @@ window.addEventListener('auth-logout', () => {
     wasLoggedIn = false;
     progress.resetProgress();
   }
+  currentUserId = null;
   currentProfile = 'general';
   updateHeader();
   renderAchievements();

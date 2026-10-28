@@ -9,6 +9,8 @@ const authRoutes = require('./src/routes/auth');
 const sessionRoutes = require('./src/routes/sessions');
 const userRoutes = require('./src/routes/users');
 const adminRoutes = require('./src/routes/admin');
+const groupRoutes = require('./src/routes/groups');
+const raceRoutes = require('./src/routes/races');
 const { bootstrapAdmin } = require('./src/services/admin');
 
 const app = express();
@@ -80,6 +82,8 @@ const registerLimiter = rateLimit({
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 600,
+  // Live races poll about once a second and have their own, higher limit below
+  skip: req => req.path.startsWith('/races'),
   message: { error: 'Слишком много запросов. Попробуйте позже.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -90,6 +94,14 @@ app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth/register', registerLimiter);
 app.use('/api/auth/verify-email', registerLimiter);
 app.use('/api/auth/resend-code', registerLimiter);
+const raceLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 4000,
+  message: { error: 'Слишком много запросов. Попробуйте позже.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/races', raceLimiter);
 app.use('/api', generalLimiter);
 
 // Serve static files from public/.
@@ -116,6 +128,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/groups', groupRoutes);
+app.use('/api/races', raceRoutes);
 
 // Dedicated admin UI; the page performs its own authenticated role check.
 app.get('/admin', (req, res) => {

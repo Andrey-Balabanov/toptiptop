@@ -486,6 +486,39 @@ body {
 .onb-dots span.on { background: var(--accent); }
 .onboarding-card .modal-actions { justify-content: center; }
 
+/* ============ GROUPS & RACES ============ */
+.social-modal { max-width: 620px !important; width: 94%; }
+.social-note { color: var(--dim); font-size: 14px; line-height: 1.5; margin: 0 0 12px; }
+.social-note.small { font-size: 12px; }
+.social-note b { color: var(--text); }
+.grp-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.grp-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--key-border); color: var(--text); cursor: pointer; text-align: left; font-family: inherit; font-size: 14px; }
+.grp-item:hover { border-color: var(--accent); }
+.grp-item span { color: var(--dim); font-size: 12px; }
+.grp-forms { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.grp-form { display: flex; gap: 8px; }
+.grp-form input { flex: 1; margin: 0 !important; }
+.grp-form button { white-space: nowrap; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--key-border); background: var(--panel-2); color: var(--text); cursor: pointer; font-family: inherit; }
+.grp-form .primary-btn { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.grp-code, .race-code { font-family: "SF Mono", Menlo, monospace; letter-spacing: 3px; color: var(--cursor) !important; }
+.race-code { font-size: 40px; font-weight: 700; text-align: center; margin: 4px 0 12px; }
+.grp-table-wrap { overflow-x: auto; margin-bottom: 8px; }
+.grp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.grp-table th { text-align: left; color: var(--dim); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px; border-bottom: 1px solid var(--key-border); }
+.grp-table td { padding: 6px; border-bottom: 1px solid var(--panel-2); color: var(--text); white-space: nowrap; }
+.modal .modal-actions .danger-btn { color: var(--wrong); }
+.race-players { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 12px; font-size: 14px; }
+.race-players span { padding: 4px 10px; border-radius: 12px; background: var(--panel-2); }
+.race-bar { background: var(--panel); border-radius: 10px; padding: 8px 12px; margin-bottom: 4px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.app.start-mode .race-bar { display: none !important; }
+.race-status { color: var(--dim); }
+.race-status b { color: var(--cursor); font-family: "SF Mono", Menlo, monospace; letter-spacing: 2px; }
+.race-row { display: grid; grid-template-columns: minmax(80px, 160px) 1fr 70px; align-items: center; gap: 8px; }
+.race-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.race-track { height: 8px; border-radius: 4px; background: var(--panel-2); overflow: hidden; }
+.race-fill { display: block; height: 100%; background: var(--accent); transition: width 0.4s; }
+.race-wpm { text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; }
+
 /* ============ DAILY GOAL ============ */
 .daily { width: 100%; margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
 .daily-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim); }
