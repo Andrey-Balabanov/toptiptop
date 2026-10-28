@@ -84,6 +84,17 @@ export function triggerLevelUpEffect(newLevel, levelTitle) {
   for (let i = 0; i < 6; i++) setTimeout(() => flyGift(60), i * 130);
 }
 
+/* Column at the top right so several toasts show one under another, not on top of each other */
+function toastStack() {
+  let stack = layer().querySelector('.toast-stack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.className = 'toast-stack';
+    layer().appendChild(stack);
+  }
+  return stack;
+}
+
 export function showAchievementToast(icon, name, desc) {
   const t2 = document.createElement('div');
   t2.className = 'toast';
@@ -96,6 +107,6 @@ export function showAchievementToast(icon, name, desc) {
         <div class="toast-desc">${desc}</div>
       </div>
     </div>`;
-  layer().appendChild(t2);
+  toastStack().appendChild(t2);
   setTimeout(() => t2.remove(), 4500);
 }

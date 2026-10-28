@@ -509,27 +509,57 @@ function updateKeyboardArrow(ch, lang) {
 
 let state = null;
 
-function render() {
+/* One span per character of the current text, built once per text by buildTextSpans() */
+let charSpans = [];
+let builtText = null;
+
+/**
+ * Build the text display: letters of a word are grouped in a non-breaking .word
+ * span so lines only wrap at spaces/newlines (never mid-word); each space is its
+ * own break opportunity and a newline forces a line break.
+ */
+function buildTextSpans() {
   textEl.innerHTML = '';
+  charSpans = [];
+  // Code keeps its indentation readable only when left-aligned
+  textEl.classList.toggle('code-text', $('mode').value === 'code');
+  let word = null;
   for (let i = 0; i < state.text.length; i++) {
+    const ch = state.text[i];
     const span = document.createElement('span');
     span.className = 'char';
-    const ch = state.text[i];
-    span.textContent = ch === '\n' ? '↵\n' : ch;
-    // Prevent browser from collapsing whitespace — make spaces visible
-    if (ch === ' ') {
-      // Use inline-block + min-width so spaces always have visible width,
-      // even inside a flex container (focus mode .text-display is display:flex)
-      span.style.display = 'inline-block';
-      span.style.minWidth = '0.6em';
-      span.style.whiteSpace = 'pre';
-    } else if (ch === '\n') {
-      span.style.display = 'inline-block';
-      span.style.whiteSpace = 'pre';
+    if (ch === ' ' || ch === '\n') {
+      word = null;
+      span.classList.add(ch === ' ' ? 'space' : 'newline');
+      span.textContent = ch === ' ' ? ' ' : '↵';
+      textEl.appendChild(span);
+      if (ch === '\n') {
+        const br = document.createElement('span');
+        br.className = 'line-break';
+        textEl.appendChild(br);
+      }
+    } else {
+      if (!word) {
+        word = document.createElement('span');
+        word.className = 'word';
+        textEl.appendChild(word);
+      }
+      span.textContent = ch;
+      word.appendChild(span);
     }
-    if (i < state.pos) span.classList.add(state.errors[i] ? 'wrong' : 'correct');
-    else if (i === state.pos) span.classList.add('current');
-    textEl.appendChild(span);
+    charSpans.push(span);
+  }
+  builtText = state.text;
+}
+
+function render() {
+  if (builtText !== state.text) buildTextSpans();
+  for (let i = 0; i < charSpans.length; i++) {
+    const cls = i < state.pos ? (state.errors[i] ? 'wrong' : 'correct') : (i === state.pos ? 'current' : '');
+    const span = charSpans[i];
+    span.classList.toggle('correct', cls === 'correct');
+    span.classList.toggle('wrong', cls === 'wrong');
+    span.classList.toggle('current', cls === 'current');
   }
   renderTypeLine();
   if (fittedText !== state.text) fitTextToFrame();
@@ -865,6 +895,7 @@ function exitFocusMode() {
 
   // Clear text display and reset stats
   textEl.innerHTML = '';
+  builtText = null;
   textEl.classList.add('blurred');
   $('tl-before').innerHTML = '';
   $('tl-after').innerHTML = '';
