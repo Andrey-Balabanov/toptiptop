@@ -349,18 +349,21 @@ body {
   border-color: rgba(224,175,104,0.2);
 }
 .ach-cell:hover { transform: scale(1.1); z-index: 5; }
-.ach-cell .ach-tip {
-  position: absolute; bottom: calc(100% + 4px); left: 50%;
-  transform: translateX(-50%);
+.ach-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Floating description (achTooltip.js) — attached to <body>, so the panel can't clip it */
+.ach-tooltip {
+  position: fixed; left: 0; top: 0; z-index: 250;
+  max-width: 260px; padding: 8px 10px; border-radius: 8px;
   background: var(--bg); border: 1px solid var(--accent);
-  padding: 5px 8px; border-radius: 6px;
-  white-space: nowrap; font-size: 11px;
-  pointer-events: none; opacity: 0;
-  transition: opacity 0.2s; z-index: 10; line-height: 1.4;
-  box-shadow: 0 4px 12px var(--panel-shadow);
+  box-shadow: 0 6px 18px var(--panel-shadow);
+  font-size: 12px; line-height: 1.4; color: var(--text);
+  display: flex; flex-direction: column; gap: 2px;
+  pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.15s;
 }
-.ach-cell:hover .ach-tip { opacity: 1; }
-.ach-cell .ach-tip b { color: var(--cursor); }
+.ach-tooltip.visible { opacity: 1; visibility: visible; }
+.ach-tooltip b { color: var(--cursor); font-size: 13px; }
+.ach-tooltip em { font-style: normal; font-size: 11px; color: var(--dim); }
+.ach-tooltip em.ok { color: var(--correct); }
 
 /* ============ STATS ROW ============ */
 .stats-row {
@@ -589,6 +592,89 @@ body {
 .type-line .tl-before { -webkit-mask-image: linear-gradient(to right, transparent, #000 40%); mask-image: linear-gradient(to right, transparent, #000 40%); }
 .type-line .tl-after { -webkit-mask-image: linear-gradient(to left, transparent, #000 40%); mask-image: linear-gradient(to left, transparent, #000 40%); }
 .type-line .char { flex-shrink: 0; }
+
+/* ============ TYPING BUDDY (animal on the current letter, animal.js) ============ */
+.type-line { position: relative; }
+.type-line.has-buddy { padding-top: 2.45em; }
+/* The animal replaces the highlight: the current letter is just bold and accented */
+.type-line.has-buddy .char.current { background: none; color: var(--cursor); font-weight: 700; border-radius: 0; box-shadow: inset 0 -2px 0 var(--cursor); }
+.buddy {
+  /* Feet ~0.2em above the tallest letters (Й, Б, Д start ~0.17em below the line box top):
+     strip padding-bottom (6px) + line box (1.5em) + 0.03em, minus the 0.08em below the feet in the SVG */
+  position: absolute; bottom: calc(6px + 1.45em); left: calc(50% + 0.5ch);
+  width: 2.4em; height: 2.4em; transform: translateX(-56%);
+  pointer-events: none; z-index: 2;
+}
+.buddy-svg { width: 100%; height: 100%; overflow: visible; display: block; transform-origin: 50% 95%; }
+.buddy .an-sclera { fill: #fff; stroke: #1b1a20; stroke-width: 0.6; }
+.buddy .an-pupil { fill: #1b1a20; }
+.buddy .an-glint { fill: #fff; }
+.buddy .an-sclera, .buddy .an-pupil, .buddy .an-glint, .buddy .an-brow, .buddy .an-mouth, .buddy .an-sweat {
+  transform-box: fill-box; transform-origin: center; transition: transform 0.18s, opacity 0.18s;
+}
+.buddy .an-brow { fill: none; stroke: #1b1a20; stroke-width: 1.1; stroke-linecap: round; opacity: 0; }
+.buddy .an-mouth-calm { fill: none; stroke: #1b1a20; stroke-width: 0.8; stroke-linecap: round; }
+.buddy .an-mouth-scared { fill: #4a1d24; opacity: 0; }
+.buddy .an-sweat { fill: #7dcfff; opacity: 0; }
+/* 1 · alert: eyes wider */
+.buddy[data-fear="1"] .an-sclera { transform: scale(1.2); }
+.buddy[data-fear="1"] .an-pupil { transform: scale(0.85); }
+/* 2 · scared: big eyes, small pupils, raised brows, a sweat drop */
+.buddy[data-fear="2"] .an-sclera { transform: scale(1.45); }
+.buddy[data-fear="2"] .an-pupil, .buddy[data-fear="2"] .an-glint { transform: scale(0.6); }
+.buddy[data-fear="2"] .an-brow { opacity: 1; transform: translateY(-2.2px) rotate(-8deg); }
+.buddy[data-fear="2"] .an-sweat-1 { opacity: 1; }
+/* 3 · terrified: pinpoint pupils, open mouth, two drops, trembling */
+.buddy[data-fear="3"] .an-sclera { transform: scale(1.7); }
+.buddy[data-fear="3"] .an-pupil { transform: scale(0.38); }
+.buddy[data-fear="3"] .an-glint { opacity: 0; }
+.buddy[data-fear="3"] .an-brow { opacity: 1; transform: translateY(-3.4px) rotate(-16deg); }
+.buddy[data-fear="3"] .an-mouth-calm { opacity: 0; }
+.buddy[data-fear="3"] .an-mouth-scared { opacity: 1; }
+.buddy[data-fear="3"] .an-sweat { opacity: 1; }
+.buddy[data-fear="3"] .an-body, .buddy[data-fear="3"] .an-face { animation: buddyTremble 0.12s linear infinite; }
+@keyframes buddyTremble { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(0.5px); } }
+/* Legs swing while it moves; faster gaits swing further and quicker */
+.buddy .an-leg { transform-box: fill-box; transform-origin: 50% 0; }
+.buddy.moving .an-leg.a { animation: buddyLegA 0.24s ease-in-out infinite; }
+.buddy.moving .an-leg.b { animation: buddyLegB 0.24s ease-in-out infinite; }
+.buddy.moving[data-gait="run"] .an-leg { animation-duration: 0.17s; }
+.buddy.moving[data-gait="jump"] .an-leg.a { animation: buddyTuck 0.15s ease-out infinite; }
+.buddy.moving[data-gait="jump"] .an-leg.b { animation: buddyTuck 0.15s ease-out infinite reverse; }
+@keyframes buddyLegA { 0%, 100% { transform: rotate(14deg); } 50% { transform: rotate(-14deg); } }
+@keyframes buddyLegB { 0%, 100% { transform: rotate(-14deg); } 50% { transform: rotate(14deg); } }
+@keyframes buddyTuck { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(28deg) scaleY(0.8); } }
+/* Eyelid: open (collapsed to the top edge) unless blinking or sleepy */
+.buddy .an-lid { transform-box: fill-box; transform-origin: 50% 0; transform: scaleY(0); }
+.buddy .an-zzz { opacity: 0; }
+.buddy .an-zzz text { font: 700 5px sans-serif; fill: #a9b1d6; }
+/* Bored (no typing for a few seconds): looks behind and back, eyes dart, blinks */
+.buddy[data-idle="bored"] .buddy-svg { animation: buddyLook 6s ease-in-out infinite; }
+.buddy[data-idle="bored"] .an-pupil { animation: buddyDart 3s ease-in-out infinite; }
+.buddy[data-idle="bored"] .an-lid { animation: buddyBlink 3.5s infinite; }
+@keyframes buddyLook {
+  0%, 28% { transform: scaleX(1) rotate(0deg); }
+  34%, 54% { transform: scaleX(-1) rotate(0deg); }
+  60%, 72% { transform: scaleX(1) rotate(0deg); }
+  78%, 88% { transform: scaleX(1) rotate(-6deg); }
+  94%, 100% { transform: scaleX(1) rotate(0deg); }
+}
+@keyframes buddyDart { 0%, 20%, 100% { transform: translateX(0); } 35%, 50% { transform: translateX(-1px); } 65%, 80% { transform: translateX(0.9px); } }
+@keyframes buddyBlink { 0%, 44%, 52%, 100% { transform: scaleY(0); } 48% { transform: scaleY(1); } }
+/* Sleepy (a long pause): heavy eyelids, slow breathing, floating z z z */
+.buddy[data-idle="sleepy"] .an-lid { transform: scaleY(0.62); }
+.buddy[data-idle="sleepy"] .an-mouth-calm { transform: scaleX(0.6); }
+.buddy[data-idle="sleepy"] .an-body, .buddy[data-idle="sleepy"] .an-face { animation: buddyBreathe 3s ease-in-out infinite; }
+.buddy[data-idle="sleepy"] .an-zzz { opacity: 1; }
+.buddy[data-idle="sleepy"] .an-zzz text { animation: buddyZ 3s ease-in infinite; opacity: 0; }
+.buddy[data-idle="sleepy"] .an-zzz .z2 { animation-delay: 1s; }
+.buddy[data-idle="sleepy"] .an-zzz .z3 { animation-delay: 2s; }
+@keyframes buddyBreathe { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(0.6px); } }
+@keyframes buddyZ { 0% { opacity: 0; transform: translate(0, 2px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(3px, -4px); } }
+@media (prefers-reduced-motion: reduce) {
+  .buddy .an-leg, .buddy .an-body, .buddy .an-face, .buddy .buddy-svg, .buddy .an-pupil, .buddy .an-lid, .buddy .an-zzz text { animation: none !important; }
+  .buddy[data-idle="sleepy"] .an-zzz text { opacity: 1; }
+}
 
 /* ============ HANDS ============ */
 .hands-wrap {

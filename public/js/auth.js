@@ -161,6 +161,30 @@ function addSidebarButtons(user) {
     storageKey: 'toptip-show-keyboard', defaultOn: true, i18nPrefix: 'btn.keyboard', event: 'keyboard-toggled',
     titleKey: 'title.keyboard',
   }));
+  // Typing buddy on the current letter: cycles alpaca → sheep → giraffe → off
+  const ANIMAL_CYCLE = ['alpaca', 'sheep', 'giraffe', 'off'];
+  const animalBtn = document.createElement('button');
+  animalBtn.className = 'small toggle';
+  animalBtn.dataset.i18nTitle = 'title.animal';
+  animalBtn.title = t('title.animal');
+  const setAnimalLabel = kind => {
+    animalBtn.classList.toggle('active', kind !== 'off');
+    animalBtn.dataset.i18n = 'btn.animal_' + kind;
+    animalBtn.textContent = t(animalBtn.dataset.i18n);
+  };
+  const currentAnimal = () => {
+    const v = localStorage.getItem('toptip-animal');
+    return ANIMAL_CYCLE.includes(v) ? v : 'alpaca';
+  };
+  setAnimalLabel(currentAnimal());
+  animalBtn.onclick = () => {
+    const next = ANIMAL_CYCLE[(ANIMAL_CYCLE.indexOf(currentAnimal()) + 1) % ANIMAL_CYCLE.length];
+    localStorage.setItem('toptip-animal', next);
+    setAnimalLabel(next);
+    window.dispatchEvent(new CustomEvent('animal-changed', { detail: { kind: next } }));
+  };
+  group.appendChild(animalBtn);
+
   // High-contrast colours
   group.appendChild(makeToggle({
     storageKey: 'toptip-high-contrast', defaultOn: false, i18nPrefix: 'btn.contrast', event: 'contrast-toggled',

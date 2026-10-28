@@ -3,6 +3,8 @@
 import { FINGER_NAMES, refreshFingerNames, fingerFor, createState } from './state.js';
 import { buildText, modeToLang, buildAdaptiveText, weakLetters } from './texts.js';
 import { createTextView } from './textView.js';
+import { attachAchievementTooltips } from './achTooltip.js';
+import { TypingBuddy } from './animal.js';
 import { renderDaily, refreshLessonSelect, lessonLabel } from './menuWidgets.js';
 import {
   keyboardSettings, buildKeyboard, findKeyEl, findKeyElByActual, setNextKey, updateKeyboardArrow,
@@ -197,6 +199,17 @@ function currentChar() {
 }
 
 const textView = createTextView(textEl, { before: $('tl-before'), after: $('tl-after') });
+
+/* Animal standing on the current letter of the strip (sidebar: alpaca / sheep / giraffe / off) */
+const buddy = new TypingBuddy($('buddy'), [$('tl-before'), $('tl-after')]);
+function applyAnimal() {
+  let kind = 'alpaca';
+  try { kind = localStorage.getItem('toptip-animal') || 'alpaca'; } catch {}
+  buddy.setAnimal(kind === 'off' ? null : kind);
+  $('type-line').classList.toggle('has-buddy', kind !== 'off');
+}
+applyAnimal();
+window.addEventListener('animal-changed', applyAnimal);
 
 function render() {
   textView.paint(state, $('mode').value === 'code');
@@ -412,6 +425,7 @@ try { accuracyMode = localStorage.getItem('toptip-accuracy-mode') === 'true'; } 
 window.addEventListener('accuracy-mode-toggled', (e) => { accuracyMode = e.detail.on; });
 
 function reset() {
+  buddy.reset();
   const mode = $('mode').value;
   const length = $('length').value;
   const lang = modeToLang(mode);
@@ -553,9 +567,15 @@ function updateHeader() {
   if (score) score.textContent = progress.getProgress().xp.toLocaleString('ru-RU');
 }
 
+let achTooltipsAttached = false;
+
 function renderAchievements() {
   const grid = $('ach-grid');
   if (!grid) return;
+  if (!achTooltipsAttached) {
+    attachAchievementTooltips(grid);
+    achTooltipsAttached = true;
+  }
   grid.innerHTML = '';
   let unlocked = 0;
   progress.getAchievements().forEach(a => {
@@ -566,7 +586,13 @@ function renderAchievements() {
     // Hidden achievements reveal nothing until they are earned
     const name = !has && a.hidden ? '???' : a.name;
     const desc = !has && a.hidden ? t('ach.hidden.desc') : a.desc;
-    cell.innerHTML = `${has ? a.icon : (a.hidden ? '❔' : '🔒')}<div class="ach-tip"><b>${name}</b><br>${desc}</div>`;
+    cell.textContent = has ? a.icon : (a.hidden ? '❔' : '🔒');
+    // Description shown by the floating tooltip (achTooltip.js) on hover, focus or tap
+    cell.dataset.name = name;
+    cell.dataset.desc = desc;
+    cell.dataset.status = t(has ? 'ach.status_unlocked' : 'ach.status_locked');
+    cell.tabIndex = 0;
+    cell.setAttribute('aria-label', `${name}. ${desc}`);
     grid.appendChild(cell);
   });
   const count = $('ach-count');
@@ -797,6 +823,7 @@ function handleKey(e) {
     // In accuracy mode a letter missed before stays marked as an error once it's finally typed
     state.errors[state.pos] = accuracyMode && !!state.errors[state.pos];
     sound.playCorrect();
+    buddy.step(true);
     const result = progress.onCorrectChar(expected);
     if (result.combo) {
       sound.playCombo();
@@ -809,6 +836,7 @@ function handleKey(e) {
     state.errors[state.pos] = true;
     state.totalErrors++;
     sound.playWrong();
+    buddy.step(false);
     progress.onWrongChar(expected);
     if (expected && expected.trim()) {
       const k = expected.toLowerCase();

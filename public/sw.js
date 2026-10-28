@@ -12,7 +12,8 @@ const SHELL = [
   '/js/progress.js', '/js/effects.js', '/js/sound.js', '/js/shift.js', '/js/arrows.js',
   '/js/course.js', '/js/daily.js', '/js/stats.js', '/js/onboarding.js', '/js/share.js',
   '/js/challenge.js', '/js/social.js', '/js/analytics.js',
-  '/js/keyboard.js', '/js/textView.js', '/js/menuWidgets.js',
+  '/js/keyboard.js', '/js/textView.js', '/js/menuWidgets.js', '/js/achTooltip.js',
+  '/js/animal.js',
   '/icons/icon-192.png', '/icons/icon-512.png',
 ];
 
