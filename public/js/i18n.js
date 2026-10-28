@@ -1,5 +1,14 @@
 /* Internationalization module */
 
+// The other interface languages live in locales/ (same keys as ru/en below; locales.test.js checks them)
+import de from './locales/de.js';
+import fr from './locales/fr.js';
+import es from './locales/es.js';
+import it from './locales/it.js';
+import pt from './locales/pt.js';
+import pl from './locales/pl.js';
+import uk from './locales/uk.js';
+
 const LOCALES = {
   ru: {
     'app.title': 'TopTipTop — Тренажёр слепой печати',
@@ -378,7 +387,7 @@ const LOCALES = {
     'stats.load_error': 'Не удалось загрузить историю.',
     'stats.chart_label': 'График скорости и точности',
     'stats.speed_wpm': 'скорость, WPM',
-    'stats.accuracy': 'точность',
+    'stats.chart_accuracy': 'точность',
     'stats.avg_last10': 'в среднем за 10 текстов: {n} WPM',
     'stats.key_tip': '{pct}% ошибок ({m} из {n})',
     'stats.no_data_key': 'пока нет данных',
@@ -780,7 +789,7 @@ const LOCALES = {
     'stats.load_error': 'Could not load your history.',
     'stats.chart_label': 'Speed and accuracy chart',
     'stats.speed_wpm': 'speed, WPM',
-    'stats.accuracy': 'accuracy',
+    'stats.chart_accuracy': 'accuracy',
     'stats.avg_last10': 'last 10 texts average: {n} WPM',
     'stats.key_tip': '{pct}% mistakes ({m} of {n})',
     'stats.no_data_key': 'no data yet',
@@ -804,6 +813,7 @@ const LOCALES = {
     'effect.combo_text': '🔥 COMBO x{streak}!',
     'effect.combo_bonus': '+{xp} bonus XP',
   },
+  de, fr, es, it, pt, pl, uk,
 };
 
 let currentLang = 'ru';
@@ -835,8 +845,10 @@ currentLang = getInitialLanguage();
 export function t(key) {
   const lang = LOCALES[currentLang];
   if (lang && lang[key] !== undefined) return lang[key];
-  const fallback = LOCALES['ru'];
-  if (fallback && fallback[key] !== undefined) return fallback[key];
+  // A string missing in a translation shows in English (Russian only for Russian itself)
+  for (const fallback of currentLang === 'ru' ? ['ru', 'en'] : ['en', 'ru']) {
+    if (LOCALES[fallback][key] !== undefined) return LOCALES[fallback][key];
+  }
   return key;
 }
 

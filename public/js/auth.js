@@ -251,6 +251,16 @@ function addSidebarButtons(user) {
   controls.appendChild(group);
 }
 
+/** Interface languages as <option>s, sorted alphabetically by their own names. */
+const INTERFACE_LANGUAGES = ['de', 'en', 'es', 'fr', 'it', 'pl', 'pt', 'ru', 'uk'];
+function languageOptions(selected) {
+  return INTERFACE_LANGUAGES
+    .map(code => ({ code, name: t('lang.' + code) }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'en'))
+    .map(({ code, name }) => `<option value="${code}" ${code === selected ? 'selected' : ''}>${name}</option>`)
+    .join('');
+}
+
 /**
  * Guest settings modal — allows language, text profile, and keyboard layout
  * to be configured without requiring login. Settings are persisted to localStorage.
@@ -278,15 +288,7 @@ function showGuestSettings() {
 
       <label>${t('settings.language')}</label>
       <select id="profile-language" style="width:100%;padding:10px 14px;margin-bottom:14px;background:var(--panel-2);border:1px solid var(--key-border);border-radius:6px;color:var(--text);font-size:14px;font-family:inherit;">
-        <option value="ru" ${guestLang === 'ru' ? 'selected' : ''}>${t('lang.ru')}</option>
-        <option value="en" ${guestLang === 'en' ? 'selected' : ''}>${t('lang.en')}</option>
-        <option value="de" ${guestLang === 'de' ? 'selected' : ''}>${t('lang.de')}</option>
-        <option value="fr" ${guestLang === 'fr' ? 'selected' : ''}>${t('lang.fr')}</option>
-        <option value="es" ${guestLang === 'es' ? 'selected' : ''}>${t('lang.es')}</option>
-        <option value="it" ${guestLang === 'it' ? 'selected' : ''}>${t('lang.it')}</option>
-        <option value="pt" ${guestLang === 'pt' ? 'selected' : ''}>${t('lang.pt')}</option>
-        <option value="pl" ${guestLang === 'pl' ? 'selected' : ''}>${t('lang.pl')}</option>
-        <option value="uk" ${guestLang === 'uk' ? 'selected' : ''}>${t('lang.uk')}</option>
+        ${languageOptions(guestLang)}
       </select>
 
       <label>${t('settings.profile')}</label>
@@ -368,15 +370,7 @@ function showProfileSettings(user) {
 
       <label>${t('settings.language')}</label>
       <select id="profile-language" style="width:100%;padding:10px 14px;margin-bottom:14px;background:var(--panel-2);border:1px solid var(--key-border);border-radius:6px;color:var(--text);font-size:14px;font-family:inherit;">
-        <option value="ru" ${(user.language || 'ru') === 'ru' ? 'selected' : ''}>${t('lang.ru')}</option>
-        <option value="en" ${(user.language || 'en') === 'en' ? 'selected' : ''}>${t('lang.en')}</option>
-        <option value="de" ${user.language === 'de' ? 'selected' : ''}>${t('lang.de')}</option>
-        <option value="fr" ${user.language === 'fr' ? 'selected' : ''}>${t('lang.fr')}</option>
-        <option value="es" ${user.language === 'es' ? 'selected' : ''}>${t('lang.es')}</option>
-        <option value="it" ${user.language === 'it' ? 'selected' : ''}>${t('lang.it')}</option>
-        <option value="pt" ${user.language === 'pt' ? 'selected' : ''}>${t('lang.pt')}</option>
-        <option value="pl" ${user.language === 'pl' ? 'selected' : ''}>${t('lang.pl')}</option>
-        <option value="uk" ${user.language === 'uk' ? 'selected' : ''}>${t('lang.uk')}</option>
+        ${languageOptions(user.language || 'ru')}
       </select>
 
       <label>${t('settings.profile')}</label>

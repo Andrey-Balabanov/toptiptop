@@ -68,7 +68,7 @@ function chartSvg(history, t) {
     </svg>
     <div class="stats-legend">
       <span class="lg wpm">— ${escapeHtml(t('stats.speed_wpm'))}</span>
-      <span class="lg acc">— ${escapeHtml(t('stats.accuracy'))}</span>
+      <span class="lg acc">— ${escapeHtml(t('stats.chart_accuracy'))}</span>
       ${avg != null ? `<span>${escapeHtml(t('stats.avg_last10').replace('{n}', Math.round(avg)))}</span>` : ''}
     </div>`;
 }

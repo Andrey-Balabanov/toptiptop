@@ -14,6 +14,8 @@ const SHELL = [
   '/js/challenge.js', '/js/social.js', '/js/analytics.js',
   '/js/keyboard.js', '/js/textView.js', '/js/menuWidgets.js', '/js/achTooltip.js',
   '/js/animal.js',
+  '/js/locales/de.js', '/js/locales/fr.js', '/js/locales/es.js', '/js/locales/it.js',
+  '/js/locales/pt.js', '/js/locales/pl.js', '/js/locales/uk.js',
   '/icons/icon-192.png', '/icons/icon-512.png',
 ];
 
