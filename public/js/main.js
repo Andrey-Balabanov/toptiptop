@@ -1,6 +1,6 @@
 /* Main entry point – bootstraps the typing trainer */
 
-import { FINGER_NAMES, refreshFingerNames, fingerFor, fingerMovement, homeKeyForFinger, createState } from './state.js';
+import { FINGER_NAMES, refreshFingerNames, fingerFor, fingerMovement, homeKeyForFinger, createState, setFingerLanguage } from './state.js';
 import { buildText, modeToLang, buildAdaptiveText } from './texts.js';
 import { getLessons, buildLessonText, currentLessonIndex, recordLessonResult } from './course.js';
 import { todayProgress, currentStreak, GOAL_OPTIONS } from './daily.js';
@@ -79,6 +79,30 @@ const KB_LAYOUTS = {
     ],
   },
 };
+
+/** Keyboards of the extra text languages (same rows for every PC/Mac variant). */
+const EXTRA_LANG_ROWS = {
+  uk: [
+    ['1','2','3','4','5','6','7','8','9','0','-','='],
+    ['й','ц','у','к','е','н','г','ш','щ','з','х','ї','ґ'],
+    ['ф','і','в','а','п','р','о','л','д','ж','є'],
+    ['я','ч','с','м','и','т','ь','б','ю','.'],
+  ],
+  de: [
+    ['1','2','3','4','5','6','7','8','9','0','ß'],
+    ['q','w','e','r','t','z','u','i','o','p','ü','+'],
+    ['a','s','d','f','g','h','j','k','l','ö','ä','#'],
+    ['y','x','c','v','b','n','m',',','.','-'],
+  ],
+  es: [
+    ['1','2','3','4','5','6','7','8','9','0','\'','¡'],
+    ['q','w','e','r','t','y','u','i','o','p','`','+'],
+    ['a','s','d','f','g','h','j','k','l','ñ','´','ç'],
+    ['z','x','c','v','b','n','m',',','.','-'],
+  ],
+};
+/** Home-row positions (row 2, columns of the eight fingers) for keyboards without homeKeyForFinger data. */
+const HOME_COLUMNS = new Set([0, 1, 2, 3, 6, 7, 8, 9]);
 
 function getCurrentKBRows() {
   const layoutDef = KB_LAYOUTS[currentKeyboardLayout] || KB_LAYOUTS['pc-ansi'];
@@ -356,15 +380,17 @@ function buildKeyboard(lang) {
   wrap.innerHTML = '';
 
   const layoutDef = KB_LAYOUTS[currentKeyboardLayout] || KB_LAYOUTS['pc-ansi'];
-  const layout = (lang === 'en' || lang === 'code') ? layoutDef.en : layoutDef.ru;
+  const extraRows = EXTRA_LANG_ROWS[lang];
+  const layout = extraRows || ((lang === 'en' || lang === 'code') ? layoutDef.en : layoutDef.ru);
+  setFingerLanguage(lang);
 
   // Which language's home-row keys should show a drawn finger
   const homeLang = (lang === 'en' || lang === 'code') ? 'en' : 'ru';
 
   // Render all 4 rows: numbers (row 0) + 3 letter rows
-  layout.forEach(row => {
+  layout.forEach((row, rowIdx) => {
     const r = document.createElement('div'); r.className = 'kb-row';
-    row.forEach(k => {
+    row.forEach((k, colIdx) => {
       const el = document.createElement('div');
       const f = fingerFor(k);
       el.className = 'key ' + (f || '');
@@ -372,7 +398,9 @@ function buildKeyboard(lang) {
 
       // Home-row keys get a finger pad so users see which finger rests where.
       const home = f ? homeKeyForFinger(f) : null;
-      const isHomeKey = home && home[homeLang] === k;
+      const isHomeKey = extraRows
+        ? rowIdx === 2 && HOME_COLUMNS.has(colIdx) && !!f
+        : home && home[homeLang] === k;
 
       if (isHomeKey) {
         // Keep the letter readable at the bottom of the key, pad above it
@@ -467,6 +495,11 @@ function setNextKey(ch) {
  * @returns {string|null} - the home key character
  */
 function getHomeKeyChar(finger, lang) {
+  if (EXTRA_LANG_ROWS[lang]) {
+    // Home row by position: pinky..index on columns 0-3, index..pinky on 6-9
+    const col = { lp: 0, lr: 1, lm: 2, li: 3, ri: 6, rm: 7, rr: 8, rp: 9 }[finger];
+    return col == null ? null : EXTRA_LANG_ROWS[lang][2][col];
+  }
   const home = homeKeyForFinger(finger);
   if (!home) return null;
   const layout = (lang === 'en' || lang === 'code') ? 'en' : 'ru';

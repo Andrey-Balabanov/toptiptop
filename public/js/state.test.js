@@ -472,3 +472,25 @@ describe('state.js', () => {
     });
   });
 });
+
+describe('per-language finger overrides', () => {
+  // eslint-disable-next-line global-require
+  const { setFingerLanguage } = require('./state.js');
+  afterEach(() => setFingerLanguage('ru'));
+
+  it('uses QWERTZ fingers for German (Z and Y swapped, umlauts on the right pinky)', () => {
+    setFingerLanguage('de');
+    expect(fingerFor('z')).toBe('ri');
+    expect(fingerFor('y')).toBe('lp');
+    expect(fingerFor('Ü')).toBe('rp');
+    setFingerLanguage('en');
+    expect(fingerFor('z')).toBe('lp');
+  });
+
+  it('knows the Ukrainian-only letters', () => {
+    setFingerLanguage('uk');
+    expect(fingerFor('і')).toBe('lr');
+    expect(fingerFor('є')).toBe('rp');
+    expect(fingerFor('ф')).toBe('lp');
+  });
+});

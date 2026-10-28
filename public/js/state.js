@@ -60,11 +60,28 @@ const KEY_TO_FINGER = {
   ' ':'tt', '\n':'rp',
 };
 
+/**
+ * Per-language differences from the ru/en map above: keys that exist only on
+ * that layout, and QWERTZ's swapped Z/Y. Activated by setFingerLanguage().
+ */
+const LANG_FINGER_OVERRIDES = {
+  uk: { 'і':'lr', 'ї':'rp', 'є':'rp', 'ґ':'rp' },
+  de: { 'z':'ri', 'y':'lp', 'ü':'rp', 'ö':'rp', 'ä':'rp', 'ß':'rp', '+':'rp', '#':'rp', '-':'rp' },
+  es: { 'ñ':'rp', 'ç':'rp', '´':'rp', '¡':'rp', '\'':'rp', '`':'rp', '+':'rp', '-':'rp' },
+};
+let fingerOverrides = {};
+
+/** Use the finger map of `lang` (falls back to the shared ru/en map). */
+function setFingerLanguage(lang) {
+  fingerOverrides = LANG_FINGER_OVERRIDES[lang] || {};
+}
+
 function fingerFor(ch) {
   if (ch == null) return null;
   if (ch === ' ') return 'tt';
   if (ch === '\n' || ch === '\t') return 'rp';
-  return KEY_TO_FINGER[ch.toLowerCase()] || null;
+  const key = ch.toLowerCase();
+  return fingerOverrides[key] || KEY_TO_FINGER[key] || null;
 }
 
 /**
@@ -182,7 +199,7 @@ function createState(text) {
 }
 
 export {
-  FINGER_NAMES, FINGER_KEYS, KEY_TO_FINGER, fingerFor,
+  FINGER_NAMES, FINGER_KEYS, KEY_TO_FINGER, fingerFor, setFingerLanguage,
   homeKeyForFinger, HOME_FINGERS, fingerMovement,
   KB_ROWS_RU_DEFAULT, KB_ROWS_EN_DEFAULT,
   createState,
