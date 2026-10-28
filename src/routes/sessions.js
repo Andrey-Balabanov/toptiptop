@@ -3,15 +3,24 @@ const { authMiddleware } = require('../middleware/auth');
 const { validateSessionBody } = require('../middleware/validate');
 const { createSession, listSessions, getSessionById } = require('../services/sessions');
 const { updateUserStats } = require('../services/auth');
+const { sanitizeSession } = require('../services/antiCheat');
+const { getDb } = require('../db');
 
 const router = Router();
 
 // Create a completed session
 router.post('/', authMiddleware, validateSessionBody, (req, res) => {
   try {
-    const result = createSession(req.user.id, { ...req.body, isDraft: false });
+    // Speed / XP / streak come from the browser: reject impossible runs and cap the rest
+    const stored = getDb().prepare('SELECT best_streak FROM users WHERE id = ?').get(req.user.id);
+    const checked = sanitizeSession(req.body, stored ? stored.best_streak : 0);
+    if (checked.error) {
+      return res.status(400).json({ error: `Сессия отклонена: ${checked.error}` });
+    }
+    const session = checked.session;
+    const result = createSession(req.user.id, { ...session, isDraft: false });
     if (!result.duplicate) {
-      updateUserStats(req.user.id, req.body.xpEarned, req.body.wpm, req.body.streakMax);
+      updateUserStats(req.user.id, session.xpEarned, session.wpm, session.streakMax);
     }
     res.status(result.duplicate ? 200 : 201).json({ id: result.id });
   } catch (err) {
