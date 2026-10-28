@@ -6,6 +6,7 @@ import { getLessons, buildLessonText, currentLessonIndex, recordLessonResult } f
 import { todayProgress, currentStreak, GOAL_OPTIONS } from './daily.js';
 import { openStatsPanel } from './stats.js';
 import { showOnboarding, hasSeenOnboarding } from './onboarding.js';
+import { shareResult } from './share.js';
 import { weakLetters } from './texts.js';
 import * as sound from './sound.js';
 import * as effects from './effects.js';
@@ -1018,9 +1019,19 @@ async function finishSession() {
 
 /* ============ COMPLETION OVERLAY ============ */
 
+let lastResult = null;
+
 function showCompletionOverlay(wpm, accuracy, errors, xp, elapsed) {
   const overlay = $('completion-overlay');
   if (!overlay) return;
+  lastResult = {
+    wpm, accuracy, errors,
+    level: progress.currentLevel().level,
+    streak: currentStreak(progress.getDaily()),
+    url: location.origin,
+  };
+  const shareBtn = $('btn-share');
+  if (shareBtn) shareBtn.textContent = t('btn.share');
 
   const cWpm = $('c-wpm');
   const cAccuracy = $('c-accuracy');
@@ -1484,6 +1495,16 @@ function init() {
     });
   }
 
+  // Completion overlay: "Share" → picture of the result (share sheet or download)
+  const shareBtn = $('btn-share');
+  if (shareBtn) {
+    shareBtn.addEventListener('click', async () => {
+      if (!lastResult) return;
+      const how = await shareResult(lastResult, t);
+      if (how === 'downloaded') shareBtn.textContent = t('share.saved');
+    });
+  }
+
   // Completion overlay: "To Menu" → exit to start menu
   const toMenuBtn = $('btn-to-menu');
   if (toMenuBtn) {
@@ -1568,3 +1589,8 @@ function init() {
 
 // Bootstrap
 init();
+
+// Installable app / offline support (see sw.js)
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+}
