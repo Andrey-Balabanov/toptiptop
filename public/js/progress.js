@@ -6,6 +6,23 @@ import { normalizeDaily, recordText, mergeDaily, currentStreak as dailyStreak } 
 import { t } from './i18n.js';
 
 const STORAGE_KEY = 'toptip-progress-v1';
+// Id of the account the stored progress belongs to (absent = guest progress)
+const OWNER_KEY = 'toptip-progress-owner';
+
+function storedOwner() {
+  try {
+    return localStorage.getItem(OWNER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setOwner(id) {
+  try {
+    if (id == null) localStorage.removeItem(OWNER_KEY);
+    else localStorage.setItem(OWNER_KEY, String(id));
+  } catch {}
+}
 
 function defaultProgress() {
   return {
@@ -61,7 +78,15 @@ function loadProgress() {
 
 export function init() {
   initialized = true;
-  progress = loadProgress();
+  // An account's progress left behind by a session that ended without logging out
+  // (expired or rejected token) is not shown to the guest
+  if (storedOwner() !== null) {
+    setOwner(null);
+    progress = defaultProgress();
+    saveProgress();
+  } else {
+    progress = loadProgress();
+  }
   currentStreak = 0;
   comboCelebrated.clear();
   // Fire callbacks to update UI
@@ -332,6 +357,7 @@ export function resetProgress() {
   progress = defaultProgress();
   currentStreak = 0;
   comboCelebrated.clear();
+  setOwner(null);
   saveProgress();
 }
 
@@ -351,7 +377,11 @@ function mergeKeyStats(...sources) {
 export function initFromServer(userData) {
   // Restore the locally persisted progress first. Authenticated users do not
   // call init(), so without this step a page reload starts from an empty state.
-  const storedProgress = loadProgress();
+  // Guest progress is merged into the account; another account's progress never is
+  const owner = storedOwner();
+  const foreign = owner !== null && owner !== String(userData.id);
+  if (foreign) progress = defaultProgress();
+  const storedProgress = foreign ? defaultProgress() : loadProgress();
   const serverAchievements = userData.achievements || {};
   const mergedAchievements = {
     ...(storedProgress.achievements || {}),
@@ -391,6 +421,7 @@ export function initFromServer(userData) {
   const countersAhead = Object.entries(counters).some(([k, v]) => v > (serverCounters[k] || 0));
 
   initialized = true;
+  setOwner(userData.id);
   saveProgress();
   // Re-check achievements against server stats; upload anything the account doesn't have yet
   const unlocked = checkAchievements();

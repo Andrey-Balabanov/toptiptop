@@ -66,6 +66,7 @@ body {
 .app.start-mode .auth-bar,
 .app.start-mode .top-bar,
 .app.start-mode .ach-panel,
+.app.start-mode .side-col,
 .app.start-mode .stats-row,
 .app.start-mode .controls-row,
 .app.start-mode .footnote,
@@ -78,6 +79,7 @@ body {
 .app.focus-mode .stats-row,
 .app.focus-mode .controls-row,
 .app.focus-mode .ach-panel,
+.app.focus-mode .side-col,
 .app.focus-mode .footnote,
 .app.focus-mode .start-btn-wrap,
 .app.focus-mode .side-panel {
@@ -309,6 +311,87 @@ body {
 .score-compact { text-align: right; margin-left: auto; }
 .sc-label { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; display: block; }
 .sc-value { font-size: 20px; font-weight: 700; color: var(--cursor); font-variant-numeric: tabular-nums; text-shadow: 0 0 10px rgba(224,175,104,0.3); line-height: 1.1; }
+
+/* ============ RIGHT COLUMN: ACHIEVEMENTS + LEVEL MAP ============ */
+.side-col { flex-direction: column; gap: 6px; min-width: 0; min-height: 0; }
+/* Achievements take only the room they need; the map sits right under them.
+   Without the map (guests) the achievements fill the column as before. */
+.side-col > .ach-panel { flex: 0 1 auto; min-height: 96px; }
+.side-col:has(> .level-map.hidden) > .ach-panel { flex: 1 1 0; }
+
+/* ============ LEVEL MAP (levelMap.js) ============ */
+.level-map {
+  background: var(--panel); border-radius: 10px; padding: 10px 12px;
+  /* Never shrinks: when the column is short the achievements scroll instead
+     (Safari otherwise squeezed the map to zero height after leaving a lesson) */
+  display: flex; flex-direction: column; flex: 0 0 auto;
+  transition: background 0.3s;
+}
+.level-map h2 {
+  font-size: 11px; font-weight: 500; color: var(--dim);
+  text-transform: uppercase; letter-spacing: 1px;
+  margin: 0 0 6px; display: flex; justify-content: space-between; align-items: center; gap: 8px;
+}
+.lm-head-right { display: flex; align-items: center; gap: 8px; }
+#lm-count { color: var(--cursor); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lm-langs { display: inline-flex; background: var(--panel-2); border-radius: 6px; padding: 2px; }
+.lm-lang {
+  border: 0; background: transparent; color: var(--dim); cursor: pointer;
+  font: inherit; font-size: 10px; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 4px;
+}
+.lm-lang.active { background: var(--accent); color: var(--bg); }
+.lm-lang:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.lm-scroll {
+  overflow-y: auto; overflow-x: hidden; max-height: 46vh;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(158,206,106,0.10), transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(122,162,247,0.10), transparent 50%),
+    var(--panel-2);
+}
+.lm-svg { display: block; }
+.lm-road { fill: none; stroke: var(--bg); stroke-width: 14; stroke-linecap: round; stroke-linejoin: round; opacity: 0.7; }
+.lm-road-dash { fill: none; stroke: var(--dim); stroke-width: 1.5; stroke-dasharray: 4 7; opacity: 0.6; }
+.lm-road-done {
+  fill: none; stroke: var(--correct); stroke-width: 5; stroke-linecap: round; opacity: 0.85;
+  filter: drop-shadow(0 0 4px rgba(158,206,106,0.45));
+}
+.lm-tree { fill: var(--li); opacity: 0.35; }
+.lm-trunk { fill: var(--lr); opacity: 0.35; }
+.lm-bush { fill: var(--ri); opacity: 0.22; }
+.lm-flag line { stroke: var(--dim); stroke-width: 2; stroke-linecap: round; }
+.lm-flag path { fill: var(--dim); }
+.lm-flag.done path { fill: var(--cursor); }
+
+.lm-node { cursor: pointer; outline: none; }
+.lm-node .lm-disc { stroke-width: 2.5; transition: transform 0.15s; transform-box: fill-box; transform-origin: center; }
+.lm-node .lm-glyph { font-weight: 700; pointer-events: none; }
+.lm-node .lm-num { font-size: 9px; fill: var(--dim); pointer-events: none; }
+.lm-node.passed .lm-disc { fill: var(--correct); stroke: var(--bg); }
+.lm-node.passed .lm-glyph { fill: var(--bg); }
+.lm-node.current .lm-disc { fill: var(--accent); stroke: var(--cursor); }
+.lm-node.current .lm-glyph { fill: var(--bg); }
+.lm-node.current .lm-num { fill: var(--cursor); font-weight: 700; }
+.lm-node.locked { cursor: default; }
+.lm-node.locked .lm-disc { fill: var(--panel); stroke: var(--dim); stroke-dasharray: 3 3; }
+.lm-node.locked .lm-glyph { fill: var(--dim); }
+.lm-node.unlocked:hover .lm-disc,
+.lm-node.unlocked:focus-visible .lm-disc { transform: scale(1.15); }
+.lm-node:focus-visible .lm-disc { stroke: var(--cursor); stroke-width: 3.5; }
+.lm-badge { fill: var(--cursor); stroke: var(--bg); stroke-width: 1.5; }
+.lm-check { fill: none; stroke: var(--bg); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.lm-lock { fill: var(--dim); }
+.lm-lock-arc { fill: none; stroke: var(--dim); stroke-width: 1.5; }
+.lm-pulse {
+  fill: none; stroke: var(--cursor); stroke-width: 2; opacity: 0.6;
+  transform-box: fill-box; transform-origin: center;
+  animation: lm-pulse 1.6s ease-out infinite;
+}
+@keyframes lm-pulse {
+  from { transform: scale(0.85); opacity: 0.7; }
+  to { transform: scale(1.35); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .lm-pulse { animation: none; } }
 
 /* ============ ACHIEVEMENTS (RECTANGULAR PANEL) ============ */
 .ach-panel {
@@ -967,15 +1050,15 @@ kbd { background: var(--panel); padding: 2px 6px; border-radius: 3px; font-famil
 
   /* Right column */
   .app.start-mode > .start-btn-wrap { grid-column: 2; grid-row: 2; align-self: center; justify-self: center; padding: 4px 6px; }
-  .app.start-mode > .ach-panel {
+  .app.start-mode > .side-col {
     grid-column: 2;
     grid-row: 3 / 5;
     align-self: stretch;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    padding: 8px;
   }
+  .app.start-mode .ach-panel, .app.start-mode .level-map { padding: 8px; }
 
   .app.start-mode > .footnote    { grid-column: 1 / -1; grid-row: 5; }
 
@@ -1006,7 +1089,7 @@ kbd { background: var(--panel); padding: 2px 6px; border-radius: 3px; font-famil
   #keyboard-layout-select { width: 100%; padding: 3px 6px; font-size: 9px; }
   #sidebar-btn-group button.small { font-size: 9px !important; padding: 3px 5px !important; }
 
-  .app.start-mode .ach-panel h2 { font-size: 9px; margin-bottom: 4px; }
+  .app.start-mode .ach-panel h2, .app.start-mode .level-map h2 { font-size: 9px; margin-bottom: 4px; }
   .app.start-mode .ach-panel .ach-grid {
     flex: 1;
     grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
@@ -1084,7 +1167,7 @@ kbd { background: var(--panel); padding: 2px 6px; border-radius: 3px; font-famil
   .app.start-mode > .controls-row { grid-column: 1; grid-row: 4; }
 
   .app.start-mode > .start-btn-wrap { grid-column: 2; grid-row: 2; align-self: center; }
-  .app.start-mode > .ach-panel {
+  .app.start-mode > .side-col {
     grid-column: 2;
     grid-row: 3 / 5;
     align-self: stretch;
@@ -1128,7 +1211,7 @@ kbd { background: var(--panel); padding: 2px 6px; border-radius: 3px; font-famil
   #keyboard-layout-select { width: 100%; padding: 4px 7px; font-size: 10px; }
 
   .app.start-mode .ach-panel { padding: 10px; }
-  .app.start-mode .ach-panel h2 { font-size: 10px; margin-bottom: 5px; }
+  .app.start-mode .ach-panel h2, .app.start-mode .level-map h2 { font-size: 10px; margin-bottom: 5px; }
   .app.start-mode .ach-panel .ach-grid {
     flex: 1;
     grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
@@ -1187,7 +1270,7 @@ kbd { background: var(--panel); padding: 2px 6px; border-radius: 3px; font-famil
   .app.start-mode > .controls-row      { grid-column: 1; grid-row: 4; }
   .app.start-mode > .start-btn-wrap    { grid-column: 1; grid-row: 5; justify-self: center; align-self: center; }
 
-  .app.start-mode > .ach-panel {
+  .app.start-mode > .side-col {
     grid-column: 2;
     grid-row: 2 / 6;
     align-self: stretch;

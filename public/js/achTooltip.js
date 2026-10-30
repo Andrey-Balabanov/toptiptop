@@ -48,25 +48,25 @@ function show(cell) {
   cell.setAttribute('aria-describedby', 'ach-tooltip');
 }
 
-function hide() {
+export function hideTooltip() {
   if (tip) tip.classList.remove('visible');
 }
 
 /** Wire the tooltip to an achievements grid (call once; cells may be re-rendered). */
-export function attachAchievementTooltips(grid) {
+export function attachAchievementTooltips(grid, selector = '.ach-cell') {
   grid.addEventListener('mouseover', e => {
-    const cell = e.target.closest('.ach-cell');
+    const cell = e.target.closest(selector);
     if (cell) show(cell);
   });
   grid.addEventListener('mouseout', e => {
-    const cell = e.target.closest('.ach-cell');
-    if (cell && !cell.contains(e.relatedTarget)) hide();
+    const cell = e.target.closest(selector);
+    if (cell && !cell.contains(e.relatedTarget)) hideTooltip();
   });
   grid.addEventListener('focusin', e => {
-    const cell = e.target.closest('.ach-cell');
+    const cell = e.target.closest(selector);
     if (cell) show(cell);
   });
-  grid.addEventListener('focusout', hide);
-  grid.addEventListener('scroll', hide);
-  window.addEventListener('resize', hide);
+  grid.addEventListener('focusout', hideTooltip);
+  grid.addEventListener('scroll', hideTooltip);
+  window.addEventListener('resize', hideTooltip);
 }

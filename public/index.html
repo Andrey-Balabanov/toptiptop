@@ -66,10 +66,28 @@
   <!-- Auth bar (injected by auth.js) -->
   <div class="auth-bar" id="auth-bar"></div>
 
-  <!-- ============ ACHIEVEMENTS PANEL (always visible for all users) ============ -->
-  <div class="ach-panel" id="ach-panel">
-    <h2><span data-i18n="label.achievements">🏆 Достижения</span> <span id="ach-count">0 / 0</span></h2>
-    <div class="ach-grid" id="ach-grid"></div>
+  <!-- Right column: achievements, and the level map below them -->
+  <div class="side-col">
+    <!-- ============ ACHIEVEMENTS PANEL (always visible for all users) ============ -->
+    <div class="ach-panel" id="ach-panel">
+      <h2><span data-i18n="label.achievements">🏆 Достижения</span> <span id="ach-count">0 / 0</span></h2>
+      <div class="ach-grid" id="ach-grid"></div>
+    </div>
+
+    <!-- ============ LEVEL MAP (logged-in users only, drawn by levelMap.js) ============ -->
+    <div class="level-map hidden" id="level-map">
+      <h2>
+        <span id="lm-title" data-i18n="map.title">🗺️ Карта уровней</span>
+        <span class="lm-head-right">
+          <span class="lm-langs">
+            <button type="button" class="lm-lang" data-lang="ru">RU</button>
+            <button type="button" class="lm-lang" data-lang="en">EN</button>
+          </span>
+          <span id="lm-count">0 / 0</span>
+        </span>
+      </h2>
+      <div class="lm-scroll" id="lm-scroll"></div>
+    </div>
   </div>
 
   <!-- Compact top bar: Level + XP + Score (always visible for all users) -->

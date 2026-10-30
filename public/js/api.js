@@ -73,7 +73,9 @@ async function request(method, path, body = null) {
     try {
       const res = await fetch(url, options);
       if (res.status === 401) {
-        setToken(null);
+        // A 401 from login/registration means wrong credentials, not an expired
+        // session: keep whoever is logged in now (a failed attempt used to log them out)
+        if (!path.startsWith('/auth/')) setToken(null);
         const data = await res.json().catch(() => ({}));
         const error = new Error(data.error || 'UNAUTHORIZED');
         error.status = res.status;

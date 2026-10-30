@@ -6,6 +6,7 @@ import { createTextView } from './textView.js';
 import { attachAchievementTooltips } from './achTooltip.js';
 import { TypingBuddy } from './animal.js';
 import { renderDaily, refreshLessonSelect, lessonLabel } from './menuWidgets.js';
+import { initLevelMap, renderLevelMap } from './levelMap.js';
 import {
   keyboardSettings, buildKeyboard, findKeyEl, findKeyElByActual, setNextKey, updateKeyboardArrow,
 } from './keyboard.js';
@@ -312,6 +313,16 @@ function startCourseFromGuide() {
   enterFocusMode();
 }
 window.addEventListener('open-onboarding', () => showOnboarding({ t, onStartCourse: startCourseFromGuide }));
+
+/* Level map: clicking an open lesson starts it */
+function startLessonFromMap(lang, index) {
+  track('level_map_lesson_started');
+  $('mode').value = 'course-' + lang;
+  refreshLessonSelect();
+  $('course-lesson').value = String(index);
+  renderLevelMap();
+  enterFocusMode();
+}
 
 /* ============ SOCIAL: GROUPS, WEEKLY CHALLENGE, RACES ============ */
 
@@ -709,6 +720,7 @@ function showCourseResult(mode, wpm, accuracy) {
   // "Next text" continues with the next lesson once it is unlocked
   refreshLessonSelect();
   if (r.unlocked && state.courseLesson + 1 < total) $('course-lesson').value = String(state.courseLesson + 1);
+  renderLevelMap();
 }
 
 function hideCompletionOverlay() {
@@ -743,6 +755,8 @@ function exitFocusMode() {
 
   app.classList.remove('focus-mode');
   app.classList.add('start-mode');
+  // The map was not laid out during the lesson: redraw it now that it's visible
+  renderLevelMap();
 
   // Hide completion overlay (just in case)
   hideCompletionOverlay();
@@ -962,6 +976,7 @@ window.addEventListener('auth-login', (e) => {
   renderAchievements();
   refreshLessonSelect();
   renderDaily();
+  renderLevelMap();
 
   // Apply user language & profile
   if (user.language) {
@@ -999,6 +1014,7 @@ window.addEventListener('auth-logout', () => {
   renderAchievements();
   refreshLessonSelect();
   renderDaily();
+  renderLevelMap();
 
   // If in focus-mode, exit to menu
   if (document.querySelector('.app.focus-mode')) {
@@ -1019,6 +1035,7 @@ window.addEventListener('profile-changed', (e) => {
   renderAchievements();
   refreshLessonSelect();
   renderDaily();
+  renderLevelMap();
 
   // Update profile for text selection
   currentProfile = profile;
@@ -1181,6 +1198,7 @@ function init() {
   if (modeSelect) {
     modeSelect.addEventListener('change', () => {
       refreshLessonSelect();
+      renderLevelMap();
       if (document.querySelector('.app.focus-mode')) {
         reset();
         textEl.focus();
@@ -1198,6 +1216,7 @@ function init() {
   }
   refreshLessonSelect();
   renderDaily();
+  initLevelMap({ onStart: startLessonFromMap });
   applyKeyboardVisibility();
   if (!hasSeenOnboarding()) showOnboarding({ t, onStartCourse: startCourseFromGuide });
   if (lengthSelect) {
@@ -1217,6 +1236,7 @@ function init() {
         progress.resetProgress();
         updateHeader();
         renderAchievements();
+        renderLevelMap();
       }
     });
   }
@@ -1231,7 +1251,9 @@ function init() {
 // Bootstrap
 init();
 
-// Installable app / offline support (see sw.js)
-if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+// Installable app / offline support (see sw.js). Not on a local dev server: its
+// offline copies hid freshly edited files (sw.js removes a worker installed earlier)
+const isLocalDev = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+if ('serviceWorker' in navigator && location.protocol !== 'file:' && !isLocalDev) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 }

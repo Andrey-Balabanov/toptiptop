@@ -83,4 +83,27 @@ describe('API token storage', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
     expect(values.has('toptip-sync-queue')).toBe(false);
   });
+
+  test('a failed login attempt does not end the current session', async () => {
+    const values = new Map();
+    global.localStorage = {
+      getItem(key) { return values.get(key) || null; },
+      setItem(key, value) { values.set(key, value); },
+      removeItem(key) { values.delete(key); },
+    };
+    global.fetch = jest.fn().mockResolvedValue({
+      status: 401, ok: false, json: async () => ({ error: 'Неверный email или пароль' }),
+    });
+
+    const api = require('./api');
+    api.setToken('current-session');
+    await expect(api.loginUser('a@b.c', 'wrong-password')).rejects.toThrow('Неверный email или пароль');
+    expect(api.getToken()).toBe('current-session');
+    expect(api.isLoggedIn()).toBe(true);
+
+    // A 401 on a normal request still means the session is over
+    await expect(api.fetchMe()).rejects.toThrow();
+    expect(api.getToken()).toBe(null);
+    delete global.fetch;
+  });
 });
