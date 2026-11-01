@@ -11,6 +11,7 @@ const userRoutes = require('./src/routes/users');
 const adminRoutes = require('./src/routes/admin');
 const groupRoutes = require('./src/routes/groups');
 const raceRoutes = require('./src/routes/races');
+const chatRoutes = require('./src/routes/chat');
 const { bootstrapAdmin } = require('./src/services/admin');
 
 const app = express();
@@ -82,8 +83,8 @@ const registerLimiter = rateLimit({
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 600,
-  // Live races poll about once a second and have their own, higher limit below
-  skip: req => req.path.startsWith('/races'),
+  // Live races and the chat poll often and have their own, higher limits below
+  skip: req => req.path.startsWith('/races') || req.path.startsWith('/chat'),
   message: { error: 'Слишком много запросов. Попробуйте позже.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -102,6 +103,15 @@ const raceLimiter = rateLimit({
   legacyHeaders: false,
 });
 app.use('/api/races', raceLimiter);
+// The open chat polls every few seconds; posting is also throttled per user in the service
+const chatLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 1500,
+  message: { error: 'Слишком много запросов. Попробуйте позже.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/chat', chatLimiter);
 app.use('/api', generalLimiter);
 
 // Serve static files from public/.
@@ -133,6 +143,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/races', raceRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Dedicated admin UI; the page performs its own authenticated role check.
 app.get('/admin', (req, res) => {

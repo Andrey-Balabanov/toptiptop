@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="480" viewBox="0 0 240 480">
+  <!-- Falling-code columns for the Programmer skin; scrolled downwards by CSS -->
+  <g font-family="SF Mono, Menlo, Consolas, monospace" font-size="14" fill="#39ff14" text-anchor="middle">
+    <g fill-opacity="0.16">
+      <text x="12" y="20">1</text><text x="12" y="40">0</text><text x="12" y="60">ﾊ</text><text x="12" y="80">1</text><text x="12" y="100">ﾐ</text>
+      <text x="12" y="120">0</text><text x="12" y="140">ﾋ</text><text x="12" y="160" fill-opacity="0.5">ｰ</text>
+    </g>
+    <g fill-opacity="0.12">
+      <text x="60" y="200">ｳ</text><text x="60" y="220">0</text><text x="60" y="240">ｼ</text><text x="60" y="260">1</text>
+      <text x="60" y="280">ﾅ</text><text x="60" y="300">ﾓ</text><text x="60" y="320">1</text><text x="60" y="340" fill-opacity="0.45">ﾆ</text>
+    </g>
+    <g fill-opacity="0.1">
+      <text x="108" y="60">ｻ</text><text x="108" y="80">ﾜ</text><text x="108" y="100">0</text><text x="108" y="120">ﾂ</text>
+      <text x="108" y="140">1</text><text x="108" y="160">ｵ</text><text x="108" y="180">ﾘ</text><text x="108" y="200">0</text>
+      <text x="108" y="220" fill-opacity="0.4">ｱ</text>
+    </g>
+    <g fill-opacity="0.14">
+      <text x="156" y="300">ﾎ</text><text x="156" y="320">1</text><text x="156" y="340">ﾃ</text><text x="156" y="360">ﾏ</text>
+      <text x="156" y="380">0</text><text x="156" y="400">ｹ</text><text x="156" y="420" fill-opacity="0.5">ﾒ</text>
+    </g>
+    <g fill-opacity="0.1">
+      <text x="204" y="100">ｴ</text><text x="204" y="120">1</text><text x="204" y="140">ｶ</text><text x="204" y="160">0</text>
+      <text x="204" y="180">ｷ</text><text x="204" y="200">ﾑ</text><text x="204" y="220">ﾕ</text><text x="204" y="240">1</text>
+      <text x="204" y="260">ﾗ</text><text x="204" y="280" fill-opacity="0.4">ｾ</text>
+    </g>
+  </g>
+</svg>

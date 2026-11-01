@@ -5,7 +5,7 @@ import { buildText, modeToLang, buildAdaptiveText, weakLetters } from './texts.j
 import { createTextView } from './textView.js';
 import { attachAchievementTooltips } from './achTooltip.js';
 import { TypingBuddy } from './animal.js';
-import { renderDaily, refreshLessonSelect, lessonLabel } from './menuWidgets.js';
+import { renderDaily, refreshLessonSelect, lessonLabel, updateStartLabel } from './menuWidgets.js';
 import { initLevelMap, renderLevelMap } from './levelMap.js';
 import {
   keyboardSettings, buildKeyboard, findKeyEl, findKeyElByActual, setNextKey, updateKeyboardArrow,
@@ -17,6 +17,8 @@ import { showOnboarding, hasSeenOnboarding } from './onboarding.js';
 import { shareResult } from './share.js';
 import { weeklyText, weeklyMode, weekKey } from './challenge.js';
 import { openGroupsPanel, openRaceLobby, RaceSession } from './social.js';
+import { openChatPanel } from './chat.js';
+import { setSkinProfile } from './skins.js';
 import { track } from './analytics.js';
 import * as sound from './sound.js';
 import * as effects from './effects.js';
@@ -370,6 +372,10 @@ function raceFinished(room) {
 
 window.addEventListener('open-groups', () => {
   openGroupsPanel({ t, onLogin: () => showAuthModal('login') });
+});
+
+window.addEventListener('open-chat', () => {
+  openChatPanel({ t, onLogin: () => showAuthModal('login') });
 });
 
 window.addEventListener('open-race', () => {
@@ -755,6 +761,7 @@ function exitFocusMode() {
 
   app.classList.remove('focus-mode');
   app.classList.add('start-mode');
+  updateStartLabel();
   // The map was not laid out during the lesson: redraw it now that it's visible
   renderLevelMap();
 
@@ -984,10 +991,12 @@ window.addEventListener('auth-login', (e) => {
     applyLanguageToDOM();
     refreshFingerNames();
     updateHeader(); // re-render level title with new language
+    updateStartLabel();
   }
   if (user.profile) {
     currentProfile = user.profile;
   }
+  setSkinProfile(user.profile);
   if (user.keyboardLayout) {
     keyboardSettings.layout = user.keyboardLayout;
     const layoutSelect = document.getElementById('keyboard-layout-select');
@@ -1010,6 +1019,10 @@ window.addEventListener('auth-logout', () => {
   }
   currentUserId = null;
   currentProfile = 'general';
+  // A guest's 'auto' skin follows the profile picked in guest settings
+  let guestProfile = 'general';
+  try { guestProfile = localStorage.getItem('toptip-guest-profile') || 'general'; } catch {}
+  setSkinProfile(guestProfile);
   updateHeader();
   renderAchievements();
   refreshLessonSelect();
@@ -1039,6 +1052,7 @@ window.addEventListener('profile-changed', (e) => {
 
   // Update profile for text selection
   currentProfile = profile;
+  setSkinProfile(profile);
 
   // Update keyboard layout
   if (keyboardLayout) {
@@ -1208,6 +1222,7 @@ function init() {
   const lessonSelect = $('course-lesson');
   if (lessonSelect) {
     lessonSelect.addEventListener('change', () => {
+      updateStartLabel();
       if (document.querySelector('.app.focus-mode')) {
         reset();
         textEl.focus();

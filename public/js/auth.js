@@ -2,6 +2,8 @@
 
 import * as api from './api.js';
 import * as progress from './progress.js';
+import { animalSVG } from './animal.js';
+import { getSkinChoice, previewSkin, applySkin, setSkinChoice, skinOptions } from './skins.js';
 import { t, setLanguage, applyLanguageToDOM, getLanguage, getLocaleDict } from './i18n.js';
 
 let onAuthChange = null;
@@ -46,7 +48,8 @@ export function renderAuthBar() {
           try { localStorage.setItem('toptip-theme', isLight ? 'light' : 'dark'); } catch {}
         };
 
-        // Add sidebar buttons for secondary actions
+        // Animal + settings next to the name; secondary actions in the sidebar
+        addTopBarButtons(bar, user);
         addSidebarButtons(user);
 
         // Sync progress from server (merges with any guest progress saved in localStorage)
@@ -92,7 +95,8 @@ function renderGuestBar() {
   document.getElementById('btn-login').onclick = () => showAuthModal('login');
   document.getElementById('btn-register').onclick = () => showAuthModal('register');
 
-  // Add sidebar buttons for guest (includes Settings)
+  // Animal + settings in the bar; secondary actions in the sidebar
+  addTopBarButtons(bar, null);
   addSidebarButtons(null);
 }
 
@@ -128,10 +132,61 @@ function makeToggle({ storageKey, defaultOn, i18nPrefix, event, titleKey }) {
   return btn;
 }
 
+/* Typing buddy on the current letter: the button shows its picture, a click picks the next one */
+const ANIMAL_CYCLE = ['alpaca', 'sheep', 'giraffe', 'off'];
+function makeAnimalButton() {
+  const btn = document.createElement('button');
+  btn.className = 'animal-btn';
+  const current = () => {
+    const v = localStorage.getItem('toptip-animal');
+    return ANIMAL_CYCLE.includes(v) ? v : 'alpaca';
+  };
+  const show = kind => {
+    btn.classList.toggle('off', kind === 'off');
+    btn.innerHTML = kind === 'off' ? '<span class="animal-off">🐾</span>' : animalSVG(kind);
+    btn.title = t('btn.animal_' + kind) + '\n' + t('title.animal');
+    btn.setAttribute('aria-label', t('btn.animal_' + kind));
+  };
+  show(current());
+  btn.onclick = () => {
+    const next = ANIMAL_CYCLE[(ANIMAL_CYCLE.indexOf(current()) + 1) % ANIMAL_CYCLE.length];
+    localStorage.setItem('toptip-animal', next);
+    show(next);
+    window.dispatchEvent(new CustomEvent('animal-changed', { detail: { kind: next } }));
+  };
+  return btn;
+}
+
+/**
+ * Put the animal picker and Settings in the auth bar, right after the user
+ * name (or first, before the theme button, for guests).
+ *
+ * @param {HTMLElement} bar  - the freshly rendered auth bar
+ * @param {object|null} user - User object from server, or null for guests.
+ */
+function addTopBarButtons(bar, user) {
+  // Settings button — shown for ALL users (guests get guest settings modal)
+  const settingsBtn = document.createElement('button');
+  settingsBtn.className = 'small';
+  settingsBtn.dataset.i18n = 'btn.settings';
+  settingsBtn.textContent = t('btn.settings');
+  settingsBtn.onclick = () => {
+    if (api.isLoggedIn() && user) {
+      api.fetchMe().then(u => showProfileSettings(u)).catch(() => {});
+    } else {
+      showGuestSettings();
+    }
+  };
+
+  const name = bar.querySelector('.username');
+  if (name) name.after(makeAnimalButton(), settingsBtn);
+  else bar.querySelector('#btn-theme')?.before(makeAnimalButton(), settingsBtn);
+}
+
 /**
  * Add secondary action buttons to the controls sidebar area:
- * history, leaderboard, arrows toggle, and settings.
- * History and leaderboard are logged-in only; settings and arrows are for ALL users.
+ * history, leaderboard, toggles, stats, groups and the guide.
+ * History and leaderboard are logged-in only; the rest are for ALL users.
  *
  * @param {object|null} user - User object from server, or null for guests.
  */
@@ -161,30 +216,6 @@ function addSidebarButtons(user) {
     storageKey: 'toptip-show-keyboard', defaultOn: true, i18nPrefix: 'btn.keyboard', event: 'keyboard-toggled',
     titleKey: 'title.keyboard',
   }));
-  // Typing buddy on the current letter: cycles alpaca → sheep → giraffe → off
-  const ANIMAL_CYCLE = ['alpaca', 'sheep', 'giraffe', 'off'];
-  const animalBtn = document.createElement('button');
-  animalBtn.className = 'small toggle';
-  animalBtn.dataset.i18nTitle = 'title.animal';
-  animalBtn.title = t('title.animal');
-  const setAnimalLabel = kind => {
-    animalBtn.classList.toggle('active', kind !== 'off');
-    animalBtn.dataset.i18n = 'btn.animal_' + kind;
-    animalBtn.textContent = t(animalBtn.dataset.i18n);
-  };
-  const currentAnimal = () => {
-    const v = localStorage.getItem('toptip-animal');
-    return ANIMAL_CYCLE.includes(v) ? v : 'alpaca';
-  };
-  setAnimalLabel(currentAnimal());
-  animalBtn.onclick = () => {
-    const next = ANIMAL_CYCLE[(ANIMAL_CYCLE.indexOf(currentAnimal()) + 1) % ANIMAL_CYCLE.length];
-    localStorage.setItem('toptip-animal', next);
-    setAnimalLabel(next);
-    window.dispatchEvent(new CustomEvent('animal-changed', { detail: { kind: next } }));
-  };
-  group.appendChild(animalBtn);
-
   // High-contrast colours
   group.appendChild(makeToggle({
     storageKey: 'toptip-high-contrast', defaultOn: false, i18nPrefix: 'btn.contrast', event: 'contrast-toggled',
@@ -216,8 +247,8 @@ function addSidebarButtons(user) {
   statsBtn.onclick = () => window.dispatchEvent(new CustomEvent('open-stats'));
   group.appendChild(statsBtn);
 
-  // Groups (friends / class / team) and live races — main.js opens them
-  for (const [key, event] of [['btn.groups', 'open-groups'], ['btn.race', 'open-race']]) {
+  // Groups (friends / class / team), live races and the player chat — main.js opens them
+  for (const [key, event] of [['btn.groups', 'open-groups'], ['btn.race', 'open-race'], ['btn.chat', 'open-chat']]) {
     const btn = document.createElement('button');
     btn.className = 'small';
     btn.dataset.i18n = key;
@@ -234,20 +265,6 @@ function addSidebarButtons(user) {
   guideBtn.onclick = () => window.dispatchEvent(new CustomEvent('open-onboarding'));
   group.appendChild(guideBtn);
 
-  // Settings button — shown for ALL users (guests get guest settings modal)
-  const settingsBtn = document.createElement('button');
-  settingsBtn.className = 'small';
-  settingsBtn.dataset.i18n = 'btn.settings';
-  settingsBtn.textContent = t('btn.settings');
-  settingsBtn.onclick = () => {
-    if (api.isLoggedIn() && user) {
-      api.fetchMe().then(u => showProfileSettings(u)).catch(() => {});
-    } else {
-      showGuestSettings();
-    }
-  };
-  group.appendChild(settingsBtn);
-
   controls.appendChild(group);
 }
 
@@ -259,6 +276,24 @@ function languageOptions(selected) {
     .sort((a, b) => a.name.localeCompare(b.name, 'en'))
     .map(({ code, name }) => `<option value="${code}" ${code === selected ? 'selected' : ''}>${name}</option>`)
     .join('');
+}
+
+/** Skin picker for both settings modals: previews live, the caller saves or reverts. */
+const SELECT_STYLE = 'width:100%;padding:10px 14px;margin-bottom:14px;background:var(--panel-2);border:1px solid var(--key-border);border-radius:6px;color:var(--text);font-size:14px;font-family:inherit;';
+function skinFieldHTML() {
+  return `
+      <label>${t('settings.skin')}</label>
+      <select id="profile-skin" style="${SELECT_STYLE}">
+        ${skinOptions(getSkinChoice())}
+      </select>
+      <div class="skin-note">${t('settings.skin_hint')}</div>`;
+}
+function wireSkinPreview() {
+  const skinSel = document.getElementById('profile-skin');
+  const profileSel = document.getElementById('profile-type');
+  const preview = () => previewSkin(skinSel.value, profileSel.value);
+  skinSel.addEventListener('change', preview);
+  profileSel.addEventListener('change', preview);
 }
 
 /**
@@ -301,7 +336,7 @@ function showGuestSettings() {
         <option value="student" ${guestProfile === 'student' ? 'selected' : ''}>${t('profile.student')}</option>
         <option value="doctor" ${guestProfile === 'doctor' ? 'selected' : ''}>${t('profile.doctor')}</option>
         <option value="lawyer" ${guestProfile === 'lawyer' ? 'selected' : ''}>${t('profile.lawyer')}</option>
-      </select>
+      </select>${skinFieldHTML()}
 
       <label>${t('settings.keyboard')}</label>
       <select id="profile-keyboard" style="width:100%;padding:10px 14px;margin-bottom:14px;background:var(--panel-2);border:1px solid var(--key-border);border-radius:6px;color:var(--text);font-size:14px;font-family:inherit;">
@@ -319,9 +354,11 @@ function showGuestSettings() {
   `;
   document.body.appendChild(overlay);
 
-  const close = () => overlay.remove();
+  // Closing without saving drops the skin preview
+  const close = () => { overlay.remove(); applySkin(); };
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
   document.getElementById('profile-cancel').onclick = close;
+  wireSkinPreview();
 
   document.getElementById('profile-save').onclick = () => {
     const language = document.getElementById('profile-language').value;
@@ -334,6 +371,7 @@ function showGuestSettings() {
       localStorage.setItem('toptip-guest-profile', profile);
       localStorage.setItem('toptip-keyboard-layout', keyboardLayout);
     } catch {}
+    setSkinChoice(document.getElementById('profile-skin').value);
 
     // Apply language immediately
     setLanguage(language);
@@ -383,7 +421,7 @@ function showProfileSettings(user) {
         <option value="student" ${user.profile === 'student' ? 'selected' : ''}>${t('profile.student')}</option>
         <option value="doctor" ${user.profile === 'doctor' ? 'selected' : ''}>${t('profile.doctor')}</option>
         <option value="lawyer" ${user.profile === 'lawyer' ? 'selected' : ''}>${t('profile.lawyer')}</option>
-      </select>
+      </select>${skinFieldHTML()}
 
       <label>${t('settings.keyboard')}</label>
       <select id="profile-keyboard" style="width:100%;padding:10px 14px;margin-bottom:14px;background:var(--panel-2);border:1px solid var(--key-border);border-radius:6px;color:var(--text);font-size:14px;font-family:inherit;">
@@ -400,9 +438,11 @@ function showProfileSettings(user) {
   `;
   document.body.appendChild(overlay);
 
-  const close = () => overlay.remove();
+  // Closing without saving drops the skin preview
+  const close = () => { overlay.remove(); applySkin(); };
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
   document.getElementById('profile-cancel').onclick = close;
+  wireSkinPreview();
 
   document.getElementById('profile-save').onclick = async () => {
     const language = document.getElementById('profile-language').value;
@@ -413,6 +453,7 @@ function showProfileSettings(user) {
       await api.updateLanguage(language);
       await api.updateProfile(profile);
       await api.updateKeyboardLayout(keyboardLayout);
+      setSkinChoice(document.getElementById('profile-skin').value);
       // Apply language immediately via i18n module
       setLanguage(language);
       applyLanguageToDOM();

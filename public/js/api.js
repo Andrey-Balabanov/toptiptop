@@ -97,9 +97,9 @@ async function request(method, path, body = null) {
     }
   }
   // All retries exhausted - queue for later sync
-  // Only progress-type writes are worth replaying later; live races and groups are not
+  // Only progress-type writes are worth replaying later; live races, groups and chat are not
   const replayable = !path.startsWith('/auth/') && !path.endsWith('/reset-password') &&
-    !path.startsWith('/races') && !path.startsWith('/groups') && method !== 'GET';
+    !path.startsWith('/races') && !path.startsWith('/groups') && !path.startsWith('/chat') && method !== 'GET';
   if (replayable) {
     queueForLater({ method, path, body });
   }
@@ -194,6 +194,24 @@ export function leaveGroup(id) {
 }
 export function removeGroupMember(id, userId) {
   return request('DELETE', '/groups/' + encodeURIComponent(id) + '/members/' + encodeURIComponent(userId));
+}
+
+/* Player chat: channel is 'global' or 'group:<id>' */
+export function fetchChatChannels() {
+  return request('GET', '/chat/channels');
+}
+export function fetchChatMessages(channel, { after, before } = {}) {
+  const qs = new URLSearchParams();
+  if (after != null) qs.set('after', String(after));
+  if (before != null) qs.set('before', String(before));
+  const query = qs.toString();
+  return request('GET', '/chat/' + encodeURIComponent(channel) + '/messages' + (query ? '?' + query : ''));
+}
+export function sendChatMessage(channel, body) {
+  return request('POST', '/chat/' + encodeURIComponent(channel) + '/messages', { body });
+}
+export function deleteChatMessage(id) {
+  return request('DELETE', '/chat/messages/' + encodeURIComponent(id));
 }
 
 /* Weekly challenge */

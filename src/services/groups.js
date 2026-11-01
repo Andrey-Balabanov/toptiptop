@@ -110,6 +110,7 @@ function leaveGroup(userId, groupId) {
   if (!group) return false;
   if (group.owner_id === userId) {
     db.prepare('DELETE FROM group_members WHERE group_id = ?').run(groupId);
+    db.prepare('DELETE FROM chat_messages WHERE channel = ?').run(`group:${groupId}`);
     db.prepare('DELETE FROM user_groups WHERE id = ?').run(groupId);
     return true;
   }

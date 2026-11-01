@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="560" viewBox="0 0 640 560">
+  <!-- Terminal dump tiled behind the Programmer skin -->
+  <g font-family="SF Mono, Menlo, Consolas, monospace" font-size="13" fill="#39ff14">
+    <text x="24" y="40" fill-opacity="0.32">$ ssh root@mainframe -p 1337</text>
+    <text x="24" y="60" fill-opacity="0.22">Connecting to 10.0.13.37 ...</text>
+    <text x="24" y="80" fill-opacity="0.28">[  OK  ] access granted</text>
+    <text x="24" y="120" fill-opacity="0.2">&gt; import keyboard, speed</text>
+    <text x="24" y="140" fill-opacity="0.2">&gt; while (true) { type(fast); }</text>
+    <text x="360" y="40" fill-opacity="0.14">0xDEADBEEF 0xC0FFEE 0x00FF41</text>
+    <text x="360" y="60" fill-opacity="0.12">01001000 01001001 00100001</text>
+    <text x="360" y="200" fill-opacity="0.24">$ git commit -m "faster fingers"</text>
+    <text x="360" y="220" fill-opacity="0.16">[main 7f3a9c2] 1 file changed</text>
+    <text x="24" y="250" fill-opacity="0.26">$ sudo rm -rf /typos</text>
+    <text x="24" y="270" fill-opacity="0.16">[sudo] password for neo: ********</text>
+    <text x="24" y="310" fill-opacity="0.22">compiling wpm [#######.....] 58%</text>
+    <text x="380" y="330" fill-opacity="0.18">if (key === target) score++;</text>
+    <text x="380" y="350" fill-opacity="0.12">else errors.push(key);</text>
+    <text x="24" y="400" fill-opacity="0.12">10110 01101 11100 00111 10101 01010</text>
+    <text x="24" y="440" fill-opacity="0.26">root@toptiptop:~# ./hack --the-planet</text>
+    <text x="24" y="460" fill-opacity="0.18">&gt;&gt; firewall bypassed in 0.42s</text>
+    <text x="360" y="500" fill-opacity="0.14">ping 127.0.0.1  ttl=64 time=0.1ms</text>
+    <text x="24" y="530" fill-opacity="0.2">$ _</text>
+  </g>
+  <g fill="none" stroke="#39ff14" stroke-opacity="0.12">
+    <rect x="340" y="90" width="260" height="80" rx="4"/>
+    <line x1="340" y1="106" x2="600" y2="106"/>
+  </g>
+  <g fill="#39ff14" fill-opacity="0.18">
+    <circle cx="350" cy="98" r="3"/><circle cx="360" cy="98" r="3"/><circle cx="370" cy="98" r="3"/>
+  </g>
+  <text x="352" y="132" font-family="SF Mono, Menlo, monospace" font-size="12" fill="#39ff14" fill-opacity="0.2">ACCESS LEVEL: ROOT</text>
+  <text x="352" y="152" font-family="SF Mono, Menlo, monospace" font-size="12" fill="#39ff14" fill-opacity="0.14">trace: 4 hops / encrypted</text>
+</svg>

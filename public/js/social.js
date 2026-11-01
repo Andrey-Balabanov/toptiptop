@@ -5,11 +5,11 @@
 
 import * as api from './api.js';
 
-function esc(s) {
+export function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-function openModal(html, extraClass = '') {
+export function openModal(html, extraClass = '') {
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `<div class="modal social-modal ${extraClass}">${html}</div>`;
@@ -19,7 +19,7 @@ function openModal(html, extraClass = '') {
   return { overlay, modal: overlay.firstElementChild, close };
 }
 
-function loginRequired(t, titleKey, onLogin) {
+export function loginRequired(t, titleKey, onLogin) {
   const { modal, close } = openModal(`
     <h2>${esc(t(titleKey))}</h2>
     <p class="social-note">${esc(t('social.login_needed'))}</p>

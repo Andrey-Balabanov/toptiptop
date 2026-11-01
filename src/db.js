@@ -101,6 +101,17 @@ function migrate() {
 
     -- Weekly challenge leaderboard: best run per user for one week's mode
     CREATE INDEX IF NOT EXISTS idx_sessions_mode_wpm ON sessions(mode, wpm DESC);
+
+    -- Player chat: 'global' for everyone, 'group:<id>' for a group's members
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      channel     TEXT NOT NULL,
+      user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      body        TEXT NOT NULL,
+      created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_chat_channel_id ON chat_messages(channel, id);
+    CREATE INDEX IF NOT EXISTS idx_chat_user_id ON chat_messages(user_id, id);
   `);
 
   // Add new columns if they don't exist (safe migration)

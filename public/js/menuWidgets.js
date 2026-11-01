@@ -1,4 +1,5 @@
-/* Start-screen widgets: the daily goal / day streak and the course lesson picker.
+/* Start-screen widgets: the daily goal / day streak, the course lesson picker
+ * and the label of the Start button.
  * Extracted from main.js; they read progress and render, nothing else.
  */
 
@@ -61,7 +62,10 @@ export function refreshLessonSelect() {
   const mode = $('mode').value;
   const isCourse = mode.startsWith('course-');
   select.classList.toggle('hidden', !isCourse);
-  if (!isCourse) return;
+  if (!isCourse) {
+    updateStartLabel();
+    return;
+  }
   const lang = modeToLang(mode);
   const lessons = getLessons(lang);
   const unlocked = currentLessonIndex(progress.getCourse(), lang);
@@ -76,5 +80,31 @@ export function refreshLessonSelect() {
   });
   select.dataset.lang = lang;
   select.value = String(Number.isInteger(prev) && prev <= unlocked ? prev : unlocked);
+  updateStartLabel();
+}
+
+/* ============ START BUTTON ============ */
+
+/** Name on the Start button what it will run: the picked mode, or the course lesson.
+ *  The next lesson of a course already begun reads "Continue" instead of "Start". */
+export function updateStartLabel() {
+  const main = $('start-main');
+  const what = $('start-what');
+  if (!main || !what) return;
+  const modeSelect = $('mode');
+  const mode = modeSelect.value;
+  let verb = t('btn.start');
+  let target = modeSelect.selectedOptions[0]?.textContent || '';
+  if (mode.startsWith('course-')) {
+    const lang = modeToLang(mode);
+    const lessons = getLessons(lang);
+    const unlocked = currentLessonIndex(progress.getCourse(), lang);
+    let index = Number($('course-lesson').value);
+    if (!Number.isInteger(index) || !lessons[index]) index = unlocked;
+    target = `${t('course.lesson')} ${index + 1}: ${lessonLabel(lessons[index])}`;
+    if (index === unlocked && unlocked > 0) verb = t('btn.continue');
+  }
+  main.textContent = verb;
+  what.textContent = target;
 }
 

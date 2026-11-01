@@ -5,7 +5,7 @@
  * API calls are never cached — progress made offline is queued by api.js.
  */
 
-const CACHE = 'toptiptop-v5';
+const CACHE = 'toptiptop-v7';
 
 // On a local dev server the offline cache only hides freshly edited files: a worker
 // installed there earlier deletes its cache, unregisters and reloads open pages.
@@ -17,7 +17,7 @@ const SHELL = [
   '/js/course.js', '/js/daily.js', '/js/stats.js', '/js/onboarding.js', '/js/share.js',
   '/js/challenge.js', '/js/social.js', '/js/analytics.js',
   '/js/keyboard.js', '/js/textView.js', '/js/menuWidgets.js', '/js/achTooltip.js', '/js/levelMap.js',
-  '/js/animal.js',
+  '/js/animal.js', '/js/chat.js', '/js/skins.js',
   '/js/locales/de.js', '/js/locales/fr.js', '/js/locales/es.js', '/js/locales/it.js',
   '/js/locales/pt.js', '/js/locales/pl.js', '/js/locales/uk.js',
   '/icons/icon-192.png', '/icons/icon-512.png',

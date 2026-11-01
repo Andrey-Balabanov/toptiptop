@@ -46,6 +46,10 @@
     if (contrast === 'true' || (contrast === null && window.matchMedia && matchMedia('(prefers-contrast: more)').matches)) {
       document.documentElement.classList.add('high-contrast');
     }
+    // Background skin (skins.js): a fixed one, or the one 'auto' last resolved to
+    var skin = localStorage.getItem('toptip-skin');
+    if (skin === 'auto') skin = localStorage.getItem('toptip-skin-auto');
+    if (skin && skin !== 'none') document.documentElement.dataset.skin = skin;
   } catch(e) {}
 </script>
 </head>
@@ -63,8 +67,17 @@
 </noscript>
 <div class="app start-mode">
 
-  <!-- Auth bar (injected by auth.js) -->
-  <div class="auth-bar" id="auth-bar"></div>
+  <!-- Top frame: the Start button (named after what it runs) and the auth bar -->
+  <div class="top-frame">
+    <div class="start-btn-wrap">
+      <button class="start-btn" id="btn-start">
+        <span class="start-main" id="start-main">🚀 Старт</span>
+        <span class="start-what" id="start-what"></span>
+      </button>
+    </div>
+    <!-- Auth bar (injected by auth.js) -->
+    <div class="auth-bar" id="auth-bar"></div>
+  </div>
 
   <!-- Right column: achievements, and the level map below them -->
   <div class="side-col">
@@ -172,12 +185,6 @@
     </button>
   </div>
 
-  <!-- ============ START BUTTON — Hero section ============ -->
-  <div class="start-btn-wrap">
-    <div class="start-btn-glow"></div>
-    <button class="start-btn" id="btn-start" data-i18n="btn.start">🚀 Старт</button>
-    <p class="start-sub" data-i18n="prompt.click_hint">Нажми, чтобы начать тренировку</p>
-  </div>
 
   <!-- ============ BACK BUTTON (focus-mode only) ============ -->
   <button class="back-btn hidden" id="btn-back" data-i18n="btn.back">← Назад</button>

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="560" viewBox="0 0 640 560">
+  <!-- Chalkboard: formulas, doodles and smudges in chalk -->
+  <g font-family="'Chalkboard SE', 'Comic Sans MS', 'Segoe Print', cursive" fill="#f2f2ea">
+    <text x="40" y="70" font-size="30" fill-opacity="0.2">E = mc²</text>
+    <text x="330" y="90" font-size="24" fill-opacity="0.16">a² + b² = c²</text>
+    <text x="60" y="230" font-size="26" fill-opacity="0.14">∫ x dx = x²/2 + C</text>
+    <text x="420" y="270" font-size="26" fill-opacity="0.18">π ≈ 3.14159</text>
+    <text x="60" y="400" font-size="24" fill-opacity="0.15">H₂O + CO₂</text>
+    <text x="380" y="460" font-size="22" fill-opacity="0.14">sin²α + cos²α = 1</text>
+    <text x="250" y="530" font-size="18" fill-opacity="0.12">HOMEWORK: p. 42 №1–7</text>
+    <text x="270" y="190" font-size="20" fill="#ffe680" fill-opacity="0.2">√2 ≈ 1.41</text>
+  </g>
+  <g fill="none" stroke="#f2f2ea" stroke-opacity="0.16" stroke-width="2" stroke-linecap="round">
+    <!-- Triangle with right angle -->
+    <path d="M330 130 L330 40 L450 130 Z" stroke-opacity="0.1"/>
+    <path d="M330 118 h12 v12"/>
+    <!-- Atom -->
+    <g transform="translate(250 330)">
+      <ellipse rx="46" ry="16"/><ellipse rx="46" ry="16" transform="rotate(60)"/><ellipse rx="46" ry="16" transform="rotate(-60)"/>
+    </g>
+    <!-- Star doodle -->
+    <path d="M560 380 l9 20 l21 2 l-16 14 l5 21 l-19 -11 l-19 11 l5 -21 l-16 -14 l21 -2 Z" stroke="#ffe680" stroke-opacity="0.2"/>
+    <!-- Underline & arrow -->
+    <path d="M40 80 q60 8 130 0"/>
+    <path d="M200 60 q40 -30 100 -10 m-10 -8 l10 8 l-12 4"/>
+  </g>
+  <circle cx="250" cy="330" r="5" fill="#ffe680" fill-opacity="0.25"/>
+  <!-- Chalk smudges -->
+  <g fill="#f2f2ea" fill-opacity="0.025">
+    <ellipse cx="520" cy="150" rx="90" ry="26" transform="rotate(-8 520 150)"/>
+    <ellipse cx="150" cy="480" rx="110" ry="22" transform="rotate(4 150 480)"/>
+  </g>
+</svg>
