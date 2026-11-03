@@ -7,7 +7,6 @@ import es from './locales/es.js';
 import it from './locales/it.js';
 import pt from './locales/pt.js';
 import pl from './locales/pl.js';
-import uk from './locales/uk.js';
 
 const LOCALES = {
   ru: {
@@ -72,7 +71,6 @@ const LOCALES = {
     'lang.pt': 'Português',
     'lang.it': 'Italiano',
     'lang.pl': 'Polski',
-    'lang.uk': 'Українська',
     'stats.speed': 'Скорость',
     'stats.accuracy': 'Точность',
     'stats.streak': 'Серия',
@@ -97,7 +95,6 @@ const LOCALES = {
     'btn.accuracy_on': '🎯 Без ошибок: вкл',
     'btn.accuracy_off': '🎯 Без ошибок: выкл',
     'title.accuracy_mode': 'При ошибке курсор ждёт, пока не нажата правильная клавиша',
-    'text.uk': 'Текст: украинский',
     'text.de': 'Текст: немецкий',
     'text.es': 'Текст: испанский',
     'course.ru': 'Курс: русский',
@@ -502,7 +499,6 @@ const LOCALES = {
     'lang.pt': 'Português',
     'lang.it': 'Italiano',
     'lang.pl': 'Polski',
-    'lang.uk': 'Українська',
     'stats.speed': 'Speed',
     'stats.accuracy': 'Accuracy',
     'stats.streak': 'Streak',
@@ -527,7 +523,6 @@ const LOCALES = {
     'btn.accuracy_on': '🎯 No mistakes: on',
     'btn.accuracy_off': '🎯 No mistakes: off',
     'title.accuracy_mode': 'On a mistake the cursor waits until you press the right key',
-    'text.uk': 'Text: Ukrainian',
     'text.de': 'Text: German',
     'text.es': 'Text: Spanish',
     'course.ru': 'Course: Russian',
@@ -869,7 +864,7 @@ const LOCALES = {
     'effect.combo_text': '🔥 COMBO x{streak}!',
     'effect.combo_bonus': '+{xp} bonus XP',
   },
-  de, fr, es, it, pt, pl, uk,
+  de, fr, es, it, pt, pl,
 };
 
 let currentLang = 'ru';

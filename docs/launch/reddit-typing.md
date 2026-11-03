@@ -14,7 +14,7 @@ What might be interesting here:
   and a one-line strip above the keyboard that keeps the cursor centred.
 - **Daily goal & streak, achievements, a weekly challenge** (same text for everyone, ranked) and
   **live races** with friends via a room code.
-- Layouts: English, Russian, Ukrainian, German (QWERTZ), Spanish.
+- Layouts: English, Russian, German (QWERTZ), Spanish.
 
 It's a side project, so I'd really appreciate feedback — especially from people who already type fast:
 what would make you actually use it for practice?

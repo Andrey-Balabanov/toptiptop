@@ -4,7 +4,7 @@
 
 const MAX_PASSWORD_LENGTH = 128;
 
-const VALID_LANGUAGES = ['ru', 'en', 'de', 'fr', 'es', 'it', 'pt', 'pl', 'uk'];
+const VALID_LANGUAGES = ['ru', 'en', 'de', 'fr', 'es', 'it', 'pt', 'pl'];
 const VALID_PROFILES = ['general', 'writer', 'programmer', 'accountant', 'journalist', 'student', 'doctor', 'lawyer'];
 
 function validateSessionBody(req, res, next) {

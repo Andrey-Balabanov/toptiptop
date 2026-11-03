@@ -269,7 +269,7 @@ function addSidebarButtons(user) {
 }
 
 /** Interface languages as <option>s, sorted alphabetically by their own names. */
-const INTERFACE_LANGUAGES = ['de', 'en', 'es', 'fr', 'it', 'pl', 'pt', 'ru', 'uk'];
+const INTERFACE_LANGUAGES = ['de', 'en', 'es', 'fr', 'it', 'pl', 'pt', 'ru'];
 function languageOptions(selected) {
   return INTERFACE_LANGUAGES
     .map(code => ({ code, name: t('lang.' + code) }))

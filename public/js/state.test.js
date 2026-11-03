@@ -486,11 +486,4 @@ describe('per-language finger overrides', () => {
     setFingerLanguage('en');
     expect(fingerFor('z')).toBe('lp');
   });
-
-  it('knows the Ukrainian-only letters', () => {
-    setFingerLanguage('uk');
-    expect(fingerFor('і')).toBe('lr');
-    expect(fingerFor('є')).toBe('rp');
-    expect(fingerFor('ф')).toBe('lp');
-  });
 });

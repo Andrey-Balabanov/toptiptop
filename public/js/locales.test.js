@@ -17,11 +17,11 @@ const tags = s => {
 };
 
 describe('interface translations', () => {
-  it('offers all nine languages of the settings', () => {
-    expect(getAvailableLanguages().sort()).toEqual(['de', 'en', 'es', 'fr', 'it', 'pl', 'pt', 'ru', 'uk']);
+  it('offers all eight languages of the settings', () => {
+    expect(getAvailableLanguages().sort()).toEqual(['de', 'en', 'es', 'fr', 'it', 'pl', 'pt', 'ru']);
   });
 
-  for (const lang of ['ru', 'de', 'fr', 'es', 'it', 'pt', 'pl', 'uk']) {
+  for (const lang of ['ru', 'de', 'fr', 'es', 'it', 'pt', 'pl']) {
     describe(lang, () => {
       const dict = getLocaleDict(lang);
 

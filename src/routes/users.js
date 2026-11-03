@@ -60,7 +60,7 @@ router.get('/me', authMiddleware, (req, res) => {
 router.patch('/me/language', authMiddleware, (req, res) => {
   try {
     const { language } = req.body;
-    const validLanguages = ['ru', 'en', 'de', 'fr', 'es', 'it', 'pt', 'pl', 'uk'];
+    const validLanguages = ['ru', 'en', 'de', 'fr', 'es', 'it', 'pt', 'pl'];
     if (!language || !validLanguages.includes(language)) {
       return res.status(400).json({ error: 'Неподдерживаемый язык' });
     }

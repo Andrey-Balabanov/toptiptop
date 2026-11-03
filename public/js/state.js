@@ -65,7 +65,6 @@ const KEY_TO_FINGER = {
  * that layout, and QWERTZ's swapped Z/Y. Activated by setFingerLanguage().
  */
 const LANG_FINGER_OVERRIDES = {
-  uk: { 'і':'lr', 'ї':'rp', 'є':'rp', 'ґ':'rp' },
   de: { 'z':'ri', 'y':'lp', 'ü':'rp', 'ö':'rp', 'ä':'rp', 'ß':'rp', '+':'rp', '#':'rp', '-':'rp' },
   es: { 'ñ':'rp', 'ç':'rp', '´':'rp', '¡':'rp', '\'':'rp', '`':'rp', '+':'rp', '-':'rp' },
 };
