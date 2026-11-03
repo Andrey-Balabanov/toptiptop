@@ -15,6 +15,21 @@ function layer() {
   return fxLayer;
 }
 
+/* Level-ups and achievements wait while the user types, so they never cover the text or the keyboard */
+let holding = false;
+const held = [];
+
+/** Runs `show` now, or once typing stops if a text is in progress. */
+export function afterTyping(show) {
+  if (holding) held.push(show);
+  else show();
+}
+
+export function holdPopups(on) {
+  holding = on;
+  if (!on) held.splice(0).forEach((show, i) => setTimeout(show, i * 400));
+}
+
 export function showParticle(x, y, text, color) {
   const p = document.createElement('div');
   p.className = 'particle';

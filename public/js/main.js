@@ -443,6 +443,8 @@ window.addEventListener('accuracy-mode-toggled', (e) => { accuracyMode = e.detai
 
 function reset() {
   buddy.reset();
+  // A text left unfinished still shows what was earned in it
+  effects.holdPopups(false);
   const mode = $('mode').value;
   const length = $('length').value;
   const lang = modeToLang(mode);
@@ -644,6 +646,8 @@ async function finishSession() {
 
   // Show completion overlay
   showCompletionOverlay(wpm, accuracy, wrongCount, xpEarned, elapsed);
+  // Level-ups and achievements earned during the text show now, over the results
+  effects.holdPopups(false);
 
   const clientSessionId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
 
@@ -758,6 +762,7 @@ function exitFocusMode() {
   const app = document.querySelector('.app');
   if (!app) return;
   leaveRaceIfAny();
+  effects.holdPopups(false);
 
   app.classList.remove('focus-mode');
   app.classList.add('start-mode');
@@ -835,6 +840,7 @@ function handleKey(e) {
 
   if (!state.startTime) {
     state.startTime = Date.now();
+    effects.holdPopups(true);
   }
 
   const expected = state.text[state.pos];
@@ -896,13 +902,9 @@ function handleKey(e) {
   updateLayoutIndicator();
 }
 
+// New achievements are announced by the onAchievement callback below
 function checkAchievements() {
-  const unlocked = progress.checkAchievements();
-  unlocked.forEach(a => {
-    sound.playAchievement();
-    effects.showAchievementToast(a.icon, a.name, a.desc);
-  });
-  if (unlocked.length > 0) renderAchievements();
+  progress.checkAchievements();
 }
 
 /* ============ KEYBOARD LAYOUT SELECTOR ============ */
@@ -948,14 +950,18 @@ function buildKeyboardLayoutSelector() {
 
 progress.setCallbacks({
   onLevelUp(level) {
-    sound.playLevelUp();
-    effects.triggerLevelUpEffect(level, progress.levelTitle(level));
+    effects.afterTyping(() => {
+      sound.playLevelUp();
+      effects.triggerLevelUpEffect(level, progress.levelTitle(level));
+    });
     updateHeader();
     renderAchievements();
   },
   onAchievement(a) {
-    sound.playAchievement();
-    effects.showAchievementToast(a.icon, a.name, a.desc);
+    effects.afterTyping(() => {
+      sound.playAchievement();
+      effects.showAchievementToast(a.icon, a.name, a.desc);
+    });
     renderAchievements();
   },
   onXpChange() {
