@@ -4,7 +4,9 @@
  * slowly, runs at a medium pace and jumps when you are fast — and the faster
  * you type, the more frightened its eyes get. A wrong key makes it flinch.
  * The animals are inline SVG with shared class hooks for the face, so the
- * fear levels are pure CSS (see "TYPING BUDDY" in style.css).
+ * fear levels are pure CSS (see "TYPING BUDDY" in style.css). The head, tail
+ * and the knees are separate groups so they move on their own: the head nods
+ * with each stride, the tail wags, the front legs fly up on a mistake.
  */
 
 export const ANIMALS = ['alpaca', 'sheep', 'giraffe'];
@@ -64,51 +66,66 @@ function face({ eye, mouth, sweat, brow, skin }) {
     </g>`;
 }
 
+/** Each leg bends at the knee: the thigh swings from the hip, the shin from the knee. */
 function legs(xs, top, bottom, color, hoof) {
+  const knee = top + (bottom - top) / 2;
   return xs.map((x, i) => `
     <g class="an-leg ${i < 2 ? 'back' : 'front'} ${i % 2 ? 'b' : 'a'}">
-      <rect x="${x}" y="${top}" width="3.6" height="${bottom - top}" rx="1.6" fill="${color}" />
-      <rect x="${x - 0.2}" y="${bottom - 2.4}" width="4" height="2.6" rx="1" fill="${hoof}" />
+      <rect x="${x}" y="${top}" width="3.6" height="${knee - top + 1.6}" rx="1.6" fill="${color}" />
+      <g class="an-shin">
+        <rect x="${x}" y="${knee}" width="3.6" height="${bottom - knee}" rx="1.6" fill="${color}" />
+        <rect x="${x - 0.2}" y="${bottom - 2.4}" width="4" height="2.6" rx="1" fill="${hoof}" />
+      </g>
     </g>`).join('');
+}
+
+/** Head and face turn together around the top of the neck (`pivot`, in viewBox units). */
+function head(pivot, parts, faceOpts) {
+  return `<g class="an-head" style="transform-origin: ${pivot[0]}px ${pivot[1]}px">${parts}${face(faceOpts)}</g>`;
 }
 
 const ART = {
   alpaca: () => `
     ${legs([13, 18.5, 29, 34.5], 42, 58, '#e8d5b0', '#7a5c3e')}
+    <g class="an-tail" style="transform-origin: 11px 31px"><ellipse cx="9" cy="31" rx="3.4" ry="4" fill="#f3e6cc" /></g>
     <g class="an-body">
-      <ellipse cx="9" cy="31" rx="3.4" ry="4" fill="#f3e6cc" />
       <ellipse cx="24" cy="36" rx="15" ry="9.5" fill="#f3e6cc" stroke="#d9c39a" stroke-width="1" />
       <path d="M12 30 q3 -3 6 0 q3 -3 6 0 q3 -3 6 0 q3 -3 6 0" fill="none" stroke="#d9c39a" stroke-width="1" />
       <rect x="32" y="12" width="9" height="24" rx="4.5" fill="#f3e6cc" stroke="#d9c39a" stroke-width="1" />
+    </g>
+    ${head([36.5, 18], `
       <ellipse cx="39" cy="5.5" rx="1.6" ry="3.4" fill="#e3cfa6" transform="rotate(-12 39 5.5)" />
       <ellipse cx="43" cy="5" rx="1.6" ry="3.4" fill="#e3cfa6" transform="rotate(10 43 5)" />
       <ellipse cx="42" cy="13" rx="8.5" ry="6.8" fill="#f3e6cc" stroke="#d9c39a" stroke-width="1" />
       <path d="M36 8.5 q3 -3.5 7 -1 q3 -2 4 1" fill="#fff8ea" stroke="#d9c39a" stroke-width="0.8" />
       <ellipse cx="48.5" cy="15.5" rx="3.6" ry="2.8" fill="#e8d5b0" />
-      <circle cx="50.2" cy="14.6" r="0.6" fill="#7a5c3e" />
-    </g>
-    ${face({ eye: [44, 12], mouth: [48.6, 17.4], sweat: [37.5, 6.5], brow: [41.3, 8.6], skin: '#f3e6cc' })}`,
+      <circle cx="50.2" cy="14.6" r="0.6" fill="#7a5c3e" />`,
+    { eye: [44, 12], mouth: [48.6, 17.4], sweat: [37.5, 6.5], brow: [41.3, 8.6], skin: '#f3e6cc' })}`,
 
   sheep: () => `
     ${legs([15, 20.5, 29, 34.5], 43, 58, '#6b6678', '#3d3a45')}
+    <g class="an-tail" style="transform-origin: 10px 34px"><circle cx="7.5" cy="33" r="2.8" fill="#f7f7f5" stroke="#d6d6d0" stroke-width="1" /></g>
     <g class="an-body">
       <g fill="#f7f7f5" stroke="#d6d6d0" stroke-width="1">
         <circle cx="14" cy="34" r="7" /><circle cx="22" cy="29" r="8" /><circle cx="31" cy="30" r="7.5" />
         <circle cx="36" cy="37" r="6.5" /><circle cx="25" cy="39" r="8" /><circle cx="15" cy="40" r="6" />
       </g>
+    </g>
+    ${head([39, 28], `
       <ellipse cx="38.5" cy="21" rx="2" ry="4" fill="#3d3a45" transform="rotate(-50 38.5 21)" />
       <ellipse cx="45" cy="25" rx="7.2" ry="6.4" fill="#3d3a45" />
       <g fill="#f7f7f5" stroke="#d6d6d0" stroke-width="0.8">
         <circle cx="42" cy="19.5" r="3" /><circle cx="46" cy="18.5" r="2.8" />
       </g>
-      <circle cx="50.3" cy="26.6" r="0.6" fill="#1b1a20" />
-    </g>
-    ${face({ eye: [46.5, 23.5], mouth: [49.2, 28.6], sweat: [41.5, 16.5], brow: [43.8, 20.4], skin: '#3d3a45' })}`,
+      <circle cx="50.3" cy="26.6" r="0.6" fill="#1b1a20" />`,
+    { eye: [46.5, 23.5], mouth: [49.2, 28.6], sweat: [41.5, 16.5], brow: [43.8, 20.4], skin: '#3d3a45' })}`,
 
   giraffe: () => `
     ${legs([13.5, 18.5, 26, 31], 38, 58, '#f2c14e', '#6b4a22')}
-    <g class="an-body">
+    <g class="an-tail" style="transform-origin: 9px 31px">
       <path d="M8 31 q-3 4 -1 9" fill="none" stroke="#c98a2e" stroke-width="1.6" stroke-linecap="round" />
+    </g>
+    <g class="an-body">
       <ellipse cx="22" cy="34" rx="13" ry="7.5" fill="#f2c14e" stroke="#d9a53a" stroke-width="1" />
       <path d="M29 33 L37 12 L43 13 L35 35 Z" fill="#f2c14e" stroke="#d9a53a" stroke-width="1" stroke-linejoin="round" />
       <path d="M33 13 q2 6 0 14" fill="none" stroke="#8a5a24" stroke-width="2" stroke-linecap="round" />
@@ -117,14 +134,15 @@ const ART = {
         <ellipse cx="27" cy="36.5" rx="2.4" ry="1.7" /><ellipse cx="19" cy="38" rx="2" ry="1.5" />
         <ellipse cx="37.5" cy="22" rx="1.6" ry="1.3" /><ellipse cx="35.5" cy="28" rx="1.4" ry="1.2" />
       </g>
+    </g>
+    ${head([40, 13], `
       <rect x="40" y="0.5" width="1.6" height="5" rx="0.8" fill="#8a5a24" /><circle cx="40.8" cy="0.8" r="1.2" fill="#6b4a22" />
       <rect x="43.5" y="1" width="1.6" height="5" rx="0.8" fill="#8a5a24" /><circle cx="44.3" cy="1.2" r="1.2" fill="#6b4a22" />
       <ellipse cx="37.5" cy="7" rx="1.4" ry="2.6" fill="#f2c14e" transform="rotate(-40 37.5 7)" />
       <ellipse cx="44" cy="9.5" rx="7.5" ry="4.6" fill="#f2c14e" stroke="#d9a53a" stroke-width="1" />
       <ellipse cx="49.5" cy="11" rx="3" ry="2.5" fill="#e3ae3c" />
-      <circle cx="51" cy="10.2" r="0.55" fill="#6b4a22" />
-    </g>
-    ${face({ eye: [44.5, 8], mouth: [49.3, 12.6], sweat: [38.5, 2.5], brow: [41.8, 4.8], skin: '#f2c14e' })}`,
+      <circle cx="51" cy="10.2" r="0.55" fill="#6b4a22" />`,
+    { eye: [44.5, 8], mouth: [49.3, 12.6], sweat: [38.5, 2.5], brow: [41.8, 4.8], skin: '#f2c14e' })}`,
 };
 
 export function animalSVG(kind) {
@@ -226,6 +244,12 @@ export class TypingBuddy {
 
   flinch() {
     if (prefersReducedMotion() || typeof this.host.animate !== 'function') return;
+    // Throws its front legs up and pulls its head back (CSS: .buddy.oops)
+    this.host.classList.remove('oops');
+    void this.host.offsetWidth; // restart the animation on quick repeated mistakes
+    this.host.classList.add('oops');
+    clearTimeout(this.oopsTimer);
+    this.oopsTimer = setTimeout(() => this.host.classList.remove('oops'), 500);
     this.host.querySelector('.buddy-svg')?.animate([
       { transform: 'translateX(0)' }, { transform: 'translateX(-4px) rotate(-6deg)' },
       { transform: 'translateX(3px) rotate(4deg)' }, { transform: 'translateX(0)' },

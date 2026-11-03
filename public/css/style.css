@@ -969,16 +969,51 @@ html.light-theme[data-skin="lawyer"] :is(.top-frame, .level-map, .ach-panel, .te
 .buddy[data-fear="3"] .an-sweat { opacity: 1; }
 .buddy[data-fear="3"] .an-body, .buddy[data-fear="3"] .an-face { animation: buddyTremble 0.12s linear infinite; }
 @keyframes buddyTremble { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(0.5px); } }
-/* Legs swing while it moves; faster gaits swing further and quicker */
-.buddy .an-leg { transform-box: fill-box; transform-origin: 50% 0; }
+/* Standing still it breathes, wags its tail and looks about; the head and tail
+   turn around their own pivots (set inline in animal.js) */
+.buddy .an-body { transform-box: fill-box; transform-origin: 50% 100%; animation: buddyBreath 2.8s ease-in-out infinite; }
+.buddy .an-head { animation: buddyHeadIdle 4.2s ease-in-out infinite; transition: transform 0.3s; }
+.buddy .an-tail { animation: buddyWag 1.6s ease-in-out infinite; }
+@keyframes buddyBreath { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.015, 1.035); } }
+@keyframes buddyHeadIdle {
+  0%, 30%, 100% { transform: rotate(0deg); }
+  38%, 52% { transform: rotate(-7deg); }
+  60%, 70% { transform: rotate(4deg); }
+  76% { transform: rotate(-2deg); }
+}
+@keyframes buddyWag { 0%, 100% { transform: rotate(-12deg); } 50% { transform: rotate(14deg); } }
+/* Legs swing from the hip and bend at the knee while it moves; faster gaits are quicker */
+.buddy .an-leg, .buddy .an-shin { transform-box: fill-box; transform-origin: 50% 0; }
 .buddy.moving .an-leg.a { animation: buddyLegA 0.24s ease-in-out infinite; }
 .buddy.moving .an-leg.b { animation: buddyLegB 0.24s ease-in-out infinite; }
-.buddy.moving[data-gait="run"] .an-leg { animation-duration: 0.17s; }
+.buddy.moving .an-leg.a .an-shin { animation: buddyKneeA 0.24s ease-in-out infinite; }
+.buddy.moving .an-leg.b .an-shin { animation: buddyKneeB 0.24s ease-in-out infinite; }
+.buddy.moving[data-gait="run"] .an-leg, .buddy.moving[data-gait="run"] .an-shin { animation-duration: 0.17s; }
 .buddy.moving[data-gait="jump"] .an-leg.a { animation: buddyTuck 0.15s ease-out infinite; }
 .buddy.moving[data-gait="jump"] .an-leg.b { animation: buddyTuck 0.15s ease-out infinite reverse; }
-@keyframes buddyLegA { 0%, 100% { transform: rotate(14deg); } 50% { transform: rotate(-14deg); } }
-@keyframes buddyLegB { 0%, 100% { transform: rotate(-14deg); } 50% { transform: rotate(14deg); } }
+.buddy.moving[data-gait="jump"] .an-shin { animation: buddyKneeTuck 0.15s ease-out infinite; }
+@keyframes buddyLegA { 0%, 100% { transform: rotate(18deg); } 50% { transform: rotate(-18deg); } }
+@keyframes buddyLegB { 0%, 100% { transform: rotate(-18deg); } 50% { transform: rotate(18deg); } }
+/* The shin folds back while the leg is carried forward, then straightens to land */
+@keyframes buddyKneeA { 0%, 50%, 100% { transform: rotate(0deg); } 75% { transform: rotate(40deg); } }
+@keyframes buddyKneeB { 0%, 50%, 100% { transform: rotate(0deg); } 25% { transform: rotate(40deg); } }
 @keyframes buddyTuck { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(28deg) scaleY(0.8); } }
+@keyframes buddyKneeTuck { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(55deg); } }
+/* Moving: the head nods with every stride and the tail flicks faster */
+.buddy.moving .an-head { animation: buddyNod 0.24s ease-in-out infinite; }
+.buddy.moving[data-gait="run"] .an-head { animation-duration: 0.17s; }
+.buddy.moving[data-gait="jump"] .an-head { animation: buddyHeadUp 0.15s ease-out infinite; }
+.buddy.moving .an-tail { animation-duration: 0.3s; }
+@keyframes buddyNod { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(7deg); } }
+@keyframes buddyHeadUp { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(-14deg); } }
+/* Wrong key: front legs fly up like hands, the head jerks back */
+.buddy.oops .an-leg.front { animation: buddyHandsUp 0.5s ease-out; }
+.buddy.oops .an-leg.front .an-shin { animation: buddyElbow 0.5s ease-out; }
+.buddy.oops .an-leg.front.b { animation-delay: 0.04s; }
+.buddy.oops .an-head { animation: buddyRecoil 0.5s ease-out; }
+@keyframes buddyHandsUp { 0%, 100% { transform: rotate(0deg); } 30%, 60% { transform: rotate(-70deg); } }
+@keyframes buddyElbow { 0%, 100% { transform: rotate(0deg); } 30%, 60% { transform: rotate(60deg); } }
+@keyframes buddyRecoil { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-20deg); } 55% { transform: rotate(-12deg); } }
 /* Eyelid: open (collapsed to the top edge) unless blinking or sleepy */
 .buddy .an-lid { transform-box: fill-box; transform-origin: 50% 0; transform: scaleY(0); }
 .buddy .an-zzz { opacity: 0; }
@@ -996,18 +1031,33 @@ html.light-theme[data-skin="lawyer"] :is(.top-frame, .level-map, .ach-panel, .te
 }
 @keyframes buddyDart { 0%, 20%, 100% { transform: translateX(0); } 35%, 50% { transform: translateX(-1px); } 65%, 80% { transform: translateX(0.9px); } }
 @keyframes buddyBlink { 0%, 44%, 52%, 100% { transform: scaleY(0); } 48% { transform: scaleY(1); } }
+/* …taps a front hoof impatiently and tilts its head up and down */
+.buddy[data-idle="bored"] .an-leg.front.b { animation: buddyTap 1.4s ease-in-out infinite; }
+.buddy[data-idle="bored"] .an-leg.front.b .an-shin { animation: buddyTapKnee 1.4s ease-in-out infinite; }
+.buddy[data-idle="bored"] .an-head { animation: buddyHeadBored 6s ease-in-out infinite; }
+@keyframes buddyTap { 0%, 40%, 60%, 100% { transform: rotate(0deg); } 50%, 90% { transform: rotate(-24deg); } }
+@keyframes buddyTapKnee { 0%, 40%, 60%, 100% { transform: rotate(0deg); } 50%, 90% { transform: rotate(30deg); } }
+@keyframes buddyHeadBored {
+  0%, 20%, 100% { transform: rotate(0deg); }
+  28%, 40% { transform: rotate(-12deg); }
+  48%, 62% { transform: rotate(8deg); }
+  70% { transform: rotate(-3deg); }
+}
 /* Sleepy (a long pause): heavy eyelids, slow breathing, floating z z z */
 .buddy[data-idle="sleepy"] .an-lid { transform: scaleY(0.62); }
 .buddy[data-idle="sleepy"] .an-mouth-calm { transform: scaleX(0.6); }
-.buddy[data-idle="sleepy"] .an-body, .buddy[data-idle="sleepy"] .an-face { animation: buddyBreathe 3s ease-in-out infinite; }
+.buddy[data-idle="sleepy"] .an-body { animation: buddyBreath 4s ease-in-out infinite; }
+/* The head droops and slowly bobs; the tail rests */
+.buddy[data-idle="sleepy"] .an-head { animation: buddyDoze 4s ease-in-out infinite; }
+.buddy[data-idle="sleepy"] .an-tail { animation: none; transform: rotate(18deg); }
+@keyframes buddyDoze { 0%, 100% { transform: rotate(16deg); } 50% { transform: rotate(21deg); } }
 .buddy[data-idle="sleepy"] .an-zzz { opacity: 1; }
 .buddy[data-idle="sleepy"] .an-zzz text { animation: buddyZ 3s ease-in infinite; opacity: 0; }
 .buddy[data-idle="sleepy"] .an-zzz .z2 { animation-delay: 1s; }
 .buddy[data-idle="sleepy"] .an-zzz .z3 { animation-delay: 2s; }
-@keyframes buddyBreathe { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(0.6px); } }
 @keyframes buddyZ { 0% { opacity: 0; transform: translate(0, 2px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(3px, -4px); } }
 @media (prefers-reduced-motion: reduce) {
-  .buddy .an-leg, .buddy .an-body, .buddy .an-face, .buddy .buddy-svg, .buddy .an-pupil, .buddy .an-lid, .buddy .an-zzz text { animation: none !important; }
+  .buddy .an-leg, .buddy .an-shin, .buddy .an-head, .buddy .an-tail, .buddy .an-body, .buddy .an-face, .buddy .buddy-svg, .buddy .an-pupil, .buddy .an-lid, .buddy .an-zzz text { animation: none !important; }
   .buddy[data-idle="sleepy"] .an-zzz text { opacity: 1; }
 }
 

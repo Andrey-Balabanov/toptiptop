@@ -27,7 +27,7 @@ describe('typing buddy', () => {
   it('draws every animal with the face parts the fear levels animate', () => {
     for (const kind of ANIMALS) {
       const svg = animalSVG(kind);
-      for (const part of ['an-sclera', 'an-pupil', 'an-brow', 'an-mouth-scared', 'an-sweat-1', 'an-leg']) {
+      for (const part of ['an-sclera', 'an-pupil', 'an-brow', 'an-mouth-scared', 'an-sweat-1', 'an-leg', 'an-shin', 'an-head', 'an-tail']) {
         expect(svg).toContain(part);
       }
     }
