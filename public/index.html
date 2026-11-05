@@ -79,14 +79,8 @@
     <div class="auth-bar" id="auth-bar"></div>
   </div>
 
-  <!-- Right column: achievements, and the level map below them -->
+  <!-- Right column: the level map, and the achievements below it -->
   <div class="side-col">
-    <!-- ============ ACHIEVEMENTS PANEL (always visible for all users) ============ -->
-    <div class="ach-panel" id="ach-panel">
-      <h2><span data-i18n="label.achievements">🏆 Достижения</span> <span id="ach-count">0 / 0</span></h2>
-      <div class="ach-grid" id="ach-grid"></div>
-    </div>
-
     <!-- ============ LEVEL MAP (logged-in users only, drawn by levelMap.js) ============ -->
     <div class="level-map hidden" id="level-map">
       <h2>
@@ -100,6 +94,13 @@
         </span>
       </h2>
       <div class="lm-scroll" id="lm-scroll"></div>
+    </div>
+
+    <!-- ============ ACHIEVEMENTS PANEL (always visible for all users) ============ -->
+    <div class="ach-panel" id="ach-panel">
+      <h2><span data-i18n="label.achievements">🏆 Достижения</span> <span id="ach-count">0 / 0</span></h2>
+      <div class="ach-total" aria-hidden="true"><i id="ach-total-fill"></i></div>
+      <div class="ach-grid" id="ach-grid"></div>
     </div>
   </div>
 
@@ -191,10 +192,14 @@
   <!-- ============ FOCUS-MODE COMPACT STATS ============ -->
   <div class="focus-stats hidden" id="focus-stats">
     <span class="fs-item" id="fs-wpm-label"><span data-i18n="stats.speed">Скорость</span> <b id="fs-wpm">0</b></span>
-    <span class="fs-item" id="fs-accuracy-label"><span data-i18n="stats.accuracy">Точность</span> <b id="fs-accuracy">100%</b></span>
+    <!-- How much of the level's text is typed -->
+    <span class="fs-item fs-progress" id="fs-progress-label"><span data-i18n="stats.level_progress">Прогресс</span>
+      <span class="fs-progress-track" id="fs-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="fs-progress-fill" id="fs-progress-fill"></span></span></span>
     <span class="fs-item" id="fs-streak-label"><span data-i18n="stats.streak">Серия</span> <b id="fs-streak">—</b></span>
     <span class="fs-item" id="fs-time-label"><span data-i18n="stats.time">Время</span> <b id="fs-time">0s</b></span>
     <span class="fs-item" id="fs-errors-label"><span data-i18n="stats.errors">Ошибки</span> <b id="fs-errors">0</b></span>
+    <!-- Shows / hides the big text panel (hidden by default; the type line stays) -->
+    <button type="button" class="fs-toggle" id="btn-text-toggle" aria-controls="text" aria-expanded="false">📄 Показать текст</button>
   </div>
 
   <!-- Live race: other players' progress -->
@@ -217,6 +222,7 @@
     <!-- Single-line copy of the text near the keyboard, cursor kept centered -->
     <div class="type-line" id="type-line">
       <!-- Typing buddy standing on the current letter (animal.js) -->
+      <div class="scenery" id="scenery" aria-hidden="true"><i class="sc-far"></i><i class="sc-near"></i><i class="sc-ground"></i></div>
       <div class="buddy hidden" id="buddy" aria-hidden="true"></div>
       <div class="tl-before" id="tl-before"></div>
       <div class="tl-after" id="tl-after"></div>

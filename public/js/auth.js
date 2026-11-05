@@ -2,7 +2,7 @@
 
 import * as api from './api.js';
 import * as progress from './progress.js';
-import { animalSVG } from './animal.js';
+import { animalSVG, ANIMALS } from './animal.js';
 import { getSkinChoice, previewSkin, applySkin, setSkinChoice, skinOptions } from './skins.js';
 import { t, setLanguage, applyLanguageToDOM, getLanguage, getLocaleDict } from './i18n.js';
 
@@ -133,7 +133,7 @@ function makeToggle({ storageKey, defaultOn, i18nPrefix, event, titleKey }) {
 }
 
 /* Typing buddy on the current letter: the button shows its picture, a click picks the next one */
-const ANIMAL_CYCLE = ['alpaca', 'sheep', 'giraffe', 'off'];
+const ANIMAL_CYCLE = [...ANIMALS, 'off'];
 function makeAnimalButton() {
   const btn = document.createElement('button');
   btn.className = 'animal-btn';
@@ -143,12 +143,19 @@ function makeAnimalButton() {
   };
   const show = kind => {
     btn.classList.toggle('off', kind === 'off');
-    btn.innerHTML = kind === 'off' ? '<span class="animal-off">🐾</span>' : animalSVG(kind);
-    btn.title = t('btn.animal_' + kind) + '\n' + t('title.animal');
-    btn.setAttribute('aria-label', t('btn.animal_' + kind));
+    // The ↻ badge says the picture is a switch, not a static logo
+    btn.innerHTML = (kind === 'off' ? '<span class="animal-off">🐾</span>' : animalSVG(kind))
+      + '<span class="animal-swap" aria-hidden="true">↻</span>';
+    btn.title = t('btn.animal_' + kind) + '\n' + t('title.animal_change') + '\n' + t('title.animal');
+    btn.setAttribute('aria-label', t('btn.animal_' + kind) + '. ' + t('title.animal_change'));
   };
   show(current());
+  // Until the player has switched the animal once, the badge gently pulses
+  let picked = false;
+  try { picked = localStorage.getItem('toptip-animal') !== null; } catch {}
+  btn.classList.toggle('never-picked', !picked);
   btn.onclick = () => {
+    btn.classList.remove('never-picked');
     const next = ANIMAL_CYCLE[(ANIMAL_CYCLE.indexOf(current()) + 1) % ANIMAL_CYCLE.length];
     localStorage.setItem('toptip-animal', next);
     show(next);

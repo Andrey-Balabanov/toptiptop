@@ -191,40 +191,49 @@ export function levelTitle(lvl) {
 }
 
 /** Achievement definitions — names/descs loaded via i18n keys */
+/* Each achievement is "value reaches goal": the card shows how far along it is.
+   tier: 1 bronze, 2 silver, 3 gold, 4 legendary (only the card's colour) */
+const totalChars = () => progress.totalChars || 0;
+const bestStreak = () => progress.bestStreak || 0;
+const bestWpm = () => progress.bestWpm || 0;
+const level = () => currentLevel().level;
+const sessions = () => progress.sessions || 0;
+const dailyBest = () => normalizeDaily(progress.daily).best || 0;
+
 const ACHIEVEMENT_DEFS = [
-  { id:'first-steps', icon:'👶', nameKey:'ach.first-steps.name', descKey:'ach.first-steps.desc', check:() => progress.totalChars >= 10 },
-  { id:'chars-100',   icon:'💯', nameKey:'ach.chars-100.name', descKey:'ach.chars-100.desc', check:() => progress.totalChars >= 100 },
-  { id:'chars-500',   icon:'📖', nameKey:'ach.chars-500.name', descKey:'ach.chars-500.desc', check:() => progress.totalChars >= 500 },
-  { id:'chars-1000',  icon:'📜', nameKey:'ach.chars-1000.name', descKey:'ach.chars-1000.desc', check:() => progress.totalChars >= 1000 },
-  { id:'chars-5000',  icon:'📚', nameKey:'ach.chars-5000.name', descKey:'ach.chars-5000.desc', check:() => progress.totalChars >= 5000 },
-  { id:'streak-10',   icon:'🎯', nameKey:'ach.streak-10.name', descKey:'ach.streak-10.desc', check:() => progress.bestStreak >= 10 },
-  { id:'streak-25',   icon:'🔥', nameKey:'ach.streak-25.name', descKey:'ach.streak-25.desc', check:() => progress.bestStreak >= 25 },
-  { id:'streak-50',   icon:'🚀', nameKey:'ach.streak-50.name', descKey:'ach.streak-50.desc', check:() => progress.bestStreak >= 50 },
-  { id:'streak-100',  icon:'⚡', nameKey:'ach.streak-100.name', descKey:'ach.streak-100.desc', check:() => progress.bestStreak >= 100 },
-  { id:'streak-250',  icon:'💫', nameKey:'ach.streak-250.name', descKey:'ach.streak-250.desc', check:() => progress.bestStreak >= 250 },
-  { id:'speed-20',    icon:'🐢', nameKey:'ach.speed-20.name', descKey:'ach.speed-20.desc', check:() => progress.bestWpm >= 20 },
-  { id:'speed-40',    icon:'🐎', nameKey:'ach.speed-40.name', descKey:'ach.speed-40.desc', check:() => progress.bestWpm >= 40 },
-  { id:'speed-60',    icon:'🏎️', nameKey:'ach.speed-60.name', descKey:'ach.speed-60.desc', check:() => progress.bestWpm >= 60 },
-  { id:'speed-80',    icon:'✈️', nameKey:'ach.speed-80.name', descKey:'ach.speed-80.desc', check:() => progress.bestWpm >= 80 },
-  { id:'level-5',     icon:'⭐', nameKey:'ach.level-5.name', descKey:'ach.level-5.desc', check:() => currentLevel().level >= 5 },
-  { id:'level-10',    icon:'🌟', nameKey:'ach.level-10.name', descKey:'ach.level-10.desc', check:() => currentLevel().level >= 10 },
-  { id:'level-20',    icon:'👑', nameKey:'ach.level-20.name', descKey:'ach.level-20.desc', check:() => currentLevel().level >= 20 },
-  { id:'sessions-10', icon:'🎓', nameKey:'ach.sessions-10.name', descKey:'ach.sessions-10.desc', check:() => progress.sessions >= 10 },
-  { id:'sessions-50', icon:'🏅', nameKey:'ach.sessions-50.name', descKey:'ach.sessions-50.desc', check:() => progress.sessions >= 50 },
-  { id:'sessions-100', icon:'🏆', nameKey:'ach.sessions-100.name', descKey:'ach.sessions-100.desc', check:() => progress.sessions >= 100 },
-  { id:'chars-20000', icon:'🗂️', nameKey:'ach.chars-20000.name', descKey:'ach.chars-20000.desc', check:() => progress.totalChars >= 20000 },
-  { id:'chars-100000', icon:'🏛️', nameKey:'ach.chars-100000.name', descKey:'ach.chars-100000.desc', check:() => progress.totalChars >= 100000 },
-  { id:'speed-100',   icon:'🚀', nameKey:'ach.speed-100.name', descKey:'ach.speed-100.desc', check:() => progress.bestWpm >= 100 },
-  { id:'daily-3',     icon:'📆', nameKey:'ach.daily-3.name', descKey:'ach.daily-3.desc', check:() => normalizeDaily(progress.daily).best >= 3 },
-  { id:'daily-7',     icon:'🗓️', nameKey:'ach.daily-7.name', descKey:'ach.daily-7.desc', check:() => normalizeDaily(progress.daily).best >= 7 },
-  { id:'daily-30',    icon:'🌙', nameKey:'ach.daily-30.name', descKey:'ach.daily-30.desc', check:() => normalizeDaily(progress.daily).best >= 30 },
-  { id:'perfect-1',   icon:'💎', nameKey:'ach.perfect-1.name', descKey:'ach.perfect-1.desc', check:() => counter('perfectTexts') >= 1 },
-  { id:'perfect-10',  icon:'💠', nameKey:'ach.perfect-10.name', descKey:'ach.perfect-10.desc', check:() => counter('perfectTexts') >= 10 },
-  { id:'course-5',    icon:'🎒', nameKey:'ach.course-5.name', descKey:'ach.course-5.desc', check:() => coursePassedTotal() >= 5 },
-  { id:'course-done', icon:'🎖️', nameKey:'ach.course-done.name', descKey:'ach.course-done.desc', check:() => courseFinished() },
+  { id:'first-steps',  icon:'👶', tier:1, value:totalChars, goal:10 },
+  { id:'chars-100',    icon:'💯', tier:1, value:totalChars, goal:100 },
+  { id:'chars-500',    icon:'📖', tier:1, value:totalChars, goal:500 },
+  { id:'chars-1000',   icon:'📜', tier:2, value:totalChars, goal:1000 },
+  { id:'chars-5000',   icon:'📚', tier:2, value:totalChars, goal:5000 },
+  { id:'streak-10',    icon:'🎯', tier:1, value:bestStreak, goal:10 },
+  { id:'streak-25',    icon:'🔥', tier:1, value:bestStreak, goal:25 },
+  { id:'streak-50',    icon:'🚀', tier:2, value:bestStreak, goal:50 },
+  { id:'streak-100',   icon:'⚡', tier:3, value:bestStreak, goal:100 },
+  { id:'streak-250',   icon:'💫', tier:4, value:bestStreak, goal:250 },
+  { id:'speed-20',     icon:'🐢', tier:1, value:bestWpm, goal:20 },
+  { id:'speed-40',     icon:'🐎', tier:2, value:bestWpm, goal:40 },
+  { id:'speed-60',     icon:'🏎️', tier:3, value:bestWpm, goal:60 },
+  { id:'speed-80',     icon:'✈️', tier:3, value:bestWpm, goal:80 },
+  { id:'level-5',      icon:'⭐', tier:1, value:level, goal:5 },
+  { id:'level-10',     icon:'🌟', tier:2, value:level, goal:10 },
+  { id:'level-20',     icon:'👑', tier:3, value:level, goal:20 },
+  { id:'sessions-10',  icon:'🎓', tier:1, value:sessions, goal:10 },
+  { id:'sessions-50',  icon:'🏅', tier:2, value:sessions, goal:50 },
+  { id:'sessions-100', icon:'🏆', tier:3, value:sessions, goal:100 },
+  { id:'chars-20000',  icon:'🗂️', tier:3, value:totalChars, goal:20000 },
+  { id:'chars-100000', icon:'🏛️', tier:4, value:totalChars, goal:100000 },
+  { id:'speed-100',    icon:'🚀', tier:4, value:bestWpm, goal:100 },
+  { id:'daily-3',      icon:'📆', tier:1, value:dailyBest, goal:3 },
+  { id:'daily-7',      icon:'🗓️', tier:2, value:dailyBest, goal:7 },
+  { id:'daily-30',     icon:'🌙', tier:4, value:dailyBest, goal:30 },
+  { id:'perfect-1',    icon:'💎', tier:2, value:() => counter('perfectTexts'), goal:1 },
+  { id:'perfect-10',   icon:'💠', tier:3, value:() => counter('perfectTexts'), goal:10 },
+  { id:'course-5',     icon:'🎒', tier:1, value:coursePassedTotal, goal:5 },
+  { id:'course-done',  icon:'🎖️', tier:4, value:courseBestShare, goal:1 },
   // Hidden until unlocked
-  { id:'night-owl',   icon:'🦉', hidden:true, nameKey:'ach.night-owl.name', descKey:'ach.night-owl.desc', check:() => counter('nightTexts') >= 1 },
-  { id:'early-bird',  icon:'🐦', hidden:true, nameKey:'ach.early-bird.name', descKey:'ach.early-bird.desc', check:() => counter('morningTexts') >= 1 },
+  { id:'night-owl',    icon:'🦉', tier:2, hidden:true, value:() => counter('nightTexts'), goal:1 },
+  { id:'early-bird',   icon:'🐦', tier:2, hidden:true, value:() => counter('morningTexts'), goal:1 },
 ];
 
 function counter(name) {
@@ -235,8 +244,12 @@ function coursePassedTotal() {
   return Object.values(progress.course || {}).reduce((sum, c) => sum + (c.passed || 0), 0);
 }
 
-function courseFinished() {
-  return Object.entries(progress.course || {}).some(([lang, c]) => (c.passed || 0) >= getLessons(lang).length);
+/** The furthest course, as a share of its lessons (1 = one course finished) */
+function courseBestShare() {
+  return Object.entries(progress.course || {}).reduce((best, [lang, c]) => {
+    const total = getLessons(lang).length;
+    return total ? Math.max(best, Math.min(1, (c.passed || 0) / total)) : best;
+  }, 0);
 }
 
 /** Build live achievement objects with current language translations */
@@ -244,12 +257,15 @@ function buildAchievements() {
   return ACHIEVEMENT_DEFS.map(a => ({
     id: a.id,
     icon: a.icon,
-    nameKey: a.nameKey,
-    descKey: a.descKey,
-    name: t(a.nameKey),
-    desc: t(a.descKey),
+    tier: a.tier,
+    nameKey: `ach.${a.id}.name`,
+    descKey: `ach.${a.id}.desc`,
+    name: t(`ach.${a.id}.name`),
+    desc: t(`ach.${a.id}.desc`),
     hidden: !!a.hidden,
-    check: a.check,
+    goal: a.goal,
+    value: () => a.value(),
+    check: () => a.value() >= a.goal,
   }));
 }
 

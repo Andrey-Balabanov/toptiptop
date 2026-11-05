@@ -212,10 +212,35 @@ body {
 .auth-bar .theme-btn:hover { border: none; background: transparent; }
 /* Typing buddy picker: just the animal's picture, a click picks the next one */
 .auth-bar .animal-btn {
-  border: none; padding: 0; width: 34px; height: 34px; line-height: 1;
+  position: relative;
+  border: 1px dashed var(--dim); border-radius: 10px;
+  padding: 0; width: 36px; height: 36px; line-height: 1;
   display: inline-flex; align-items: center; justify-content: center;
 }
-.auth-bar .animal-btn:hover { border: none; background: transparent; transform: scale(1.12); }
+.auth-bar .animal-btn:hover { border: 1px solid var(--accent); background: transparent; }
+.auth-bar .animal-btn:hover .buddy-svg,
+.auth-bar .animal-btn:hover .animal-off { transform: scale(1.12); }
+.auth-bar .animal-btn .buddy-svg, .auth-bar .animal-btn .animal-off { transition: transform 0.15s; }
+/* ↻ badge in the corner: tells the player the picture can be switched */
+.auth-bar .animal-btn .animal-swap {
+  position: absolute; right: -6px; bottom: -6px;
+  width: 16px; height: 16px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--accent); color: var(--panel);
+  font-size: 11px; font-weight: 700; line-height: 1;
+  box-shadow: 0 0 0 2px var(--panel);
+  transition: transform 0.25s;
+}
+.auth-bar .animal-btn:hover .animal-swap { transform: rotate(180deg) scale(1.1); }
+.auth-bar .animal-btn.never-picked .animal-swap { animation: animalSwapPulse 2.4s ease-in-out infinite; }
+@keyframes animalSwapPulse {
+  0%, 70%, 100% { transform: scale(1); }
+  80% { transform: scale(1.35) rotate(90deg); }
+  90% { transform: scale(1.1) rotate(180deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-bar .animal-btn.never-picked .animal-swap { animation: none; }
+}
 .auth-bar .animal-btn .buddy-svg { width: 30px; height: 30px; }
 .auth-bar .animal-btn .animal-off { font-size: 20px; opacity: 0.45; }
 .animal-btn .an-sclera { fill: #fff; stroke: #1b1a20; stroke-width: 0.6; }
@@ -339,7 +364,7 @@ body {
 
 /* ============ RIGHT COLUMN: ACHIEVEMENTS + LEVEL MAP ============ */
 .side-col { flex-direction: column; gap: 6px; min-width: 0; min-height: 0; }
-/* Achievements take only the room they need; the map sits right under them.
+/* The map sits on top; the achievements below take only the room they need.
    Without the map (guests) the achievements fill the column as before. */
 .side-col > .ach-panel { flex: 0 1 auto; min-height: 96px; }
 .side-col:has(> .level-map.hidden) > .ach-panel { flex: 1 1 0; }
@@ -433,31 +458,162 @@ body {
   flex-shrink: 0;
 }
 .ach-panel h2 span { color: var(--cursor); }
+/* Overall progress strip under the title */
+.ach-total {
+  height: 3px; border-radius: 2px; background: var(--panel-2);
+  margin: -2px 0 8px; overflow: hidden; flex-shrink: 0;
+}
+.ach-total i {
+  display: block; height: 100%; width: 0;
+  background: linear-gradient(90deg, var(--cursor), var(--correct));
+  transition: width 0.8s cubic-bezier(.2,.8,.2,1);
+}
 .ach-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
-  gap: 5px;
-  overflow-y: auto;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+  overflow-y: auto; overflow-x: hidden;
   flex: 1;
   align-content: start;
+  padding: 4px 2px 6px;
 }
-.ach-cell {
-  display: flex; align-items: center; justify-content: center;
-  background: var(--panel-2); border-radius: 5px;
-  font-size: 16px; position: relative; cursor: help;
-  opacity: 0.3; filter: grayscale(1); transition: all 0.3s;
-  border: 1px solid transparent;
-  height: 36px;
-  min-width: 0;
+
+/* ---- Achievement cards. Tier sets --tc (its colour): bronze, silver, gold, legendary ---- */
+.ach-card {
+  --tc: #cd7f32;
+  position: relative; isolation: isolate;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  min-width: 0; padding: 10px 6px 8px;
+  border-radius: 12px; cursor: help; text-align: center;
+  background: var(--panel-2);
+  border: 1px solid rgba(255,255,255,0.04);
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(.2,.8,.2,1), box-shadow 0.25s, border-color 0.25s;
 }
-.ach-cell.unlocked {
-  opacity: 1; filter: none;
-  background: linear-gradient(135deg, rgba(224,175,104,0.18), rgba(122,162,247,0.18));
-  box-shadow: 0 0 14px rgba(224,175,104,0.25);
-  border-color: rgba(224,175,104,0.2);
+.ach-card.tier-2 { --tc: #b8c4dc; }
+.ach-card.tier-3 { --tc: #f2c14e; }
+.ach-card.tier-4 { --tc: #bb9af7; }
+.ach-card.secret { --tc: #73daca; }
+/* Light theme: deeper tier colours so dates and bars stay readable on white */
+html.light-theme .ach-card { --tc: #a0612a; border-color: rgba(0,0,0,0.06); }
+html.light-theme .ach-card.tier-2 { --tc: #5f6b85; }
+html.light-theme .ach-card.tier-3 { --tc: #b07d00; }
+html.light-theme .ach-card.tier-4 { --tc: #7b4fd0; }
+html.light-theme .ach-card.secret { --tc: #00897b; }
+
+.ach-badge {
+  position: relative; width: 42px; height: 42px; flex-shrink: 0;
+  display: grid; place-items: center; border-radius: 50%;
+  font-size: 21px; line-height: 1;
+  background: var(--bg);
+  transition: transform 0.3s cubic-bezier(.3,1.6,.5,1);
 }
-.ach-cell:hover { transform: scale(1.1); z-index: 5; }
-.ach-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ach-icon { display: block; }
+.ach-name {
+  font-size: 11px; font-weight: 600; line-height: 1.25; color: var(--text);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; min-height: 2.5em; overflow-wrap: anywhere;
+}
+.ach-foot {
+  width: 100%; font-size: 9.5px; color: var(--dim);
+  font-variant-numeric: tabular-nums; letter-spacing: 0.2px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  min-height: 12px;
+}
+.ach-bar { width: 100%; height: 4px; border-radius: 2px; background: var(--bg); overflow: hidden; }
+.ach-bar i {
+  display: block; height: 100%; width: calc(var(--p, 0) * 100%);
+  border-radius: 2px; background: var(--tc); opacity: 0.75;
+  transition: width 0.8s cubic-bezier(.2,.8,.2,1);
+}
+
+/* Unlocked: tinted card, glowing medal, slow shine passing over it */
+.ach-card.unlocked {
+  background:
+    radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--tc) 26%, transparent), transparent 70%),
+    var(--panel-2);
+  border-color: color-mix(in srgb, var(--tc) 45%, transparent);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--tc) 18%, transparent);
+}
+.ach-card.unlocked .ach-badge {
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--tc) 55%, #fff 10%), color-mix(in srgb, var(--tc) 25%, var(--bg)) 70%);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--tc) 70%, transparent), 0 0 16px color-mix(in srgb, var(--tc) 45%, transparent);
+}
+.ach-card.unlocked .ach-foot { color: var(--tc); font-weight: 600; }
+.ach-card.unlocked::after {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.16) 50%, transparent 65%);
+  transform: translateX(-120%);
+  animation: ach-shine 7s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 0.45s);
+}
+@keyframes ach-shine {
+  0%, 82% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+/* Legendary: a colour ring slowly running around the edge */
+.ach-card.unlocked.tier-4::before {
+  content: ''; position: absolute; inset: -60%; z-index: -2; pointer-events: none;
+  background: conic-gradient(from 0deg, transparent 0 70%, var(--tc) 85%, #f7768e 92%, transparent 100%);
+  animation: ach-spin 5s linear infinite;
+  opacity: 0.55;
+}
+.ach-card.unlocked.tier-4 { background-clip: padding-box; }
+.ach-card.unlocked.tier-4 .ach-badge { animation: ach-float 3.2s ease-in-out infinite; }
+@keyframes ach-spin { to { transform: rotate(360deg); } }
+@keyframes ach-float { 50% { transform: translateY(-3px); } }
+
+/* Locked: faded medal behind a small lock, dashed rim in the tier colour */
+.ach-card.locked .ach-badge {
+  border: 1.5px dashed color-mix(in srgb, var(--tc) 45%, var(--dim));
+}
+.ach-card.locked .ach-icon { filter: grayscale(1); opacity: 0.5; }
+.ach-card.locked .ach-name { color: color-mix(in srgb, var(--text) 55%, var(--dim)); font-weight: 500; }
+.ach-lock {
+  position: absolute; right: -4px; bottom: -3px;
+  font-size: 11px; line-height: 1;
+  background: var(--panel-2); border-radius: 50%; padding: 2px;
+}
+.ach-card.secret .ach-icon { filter: none; opacity: 0.7; animation: ach-wobble 4s ease-in-out infinite; }
+.ach-card.secret { border-style: dashed; border-color: color-mix(in srgb, var(--tc) 35%, transparent); }
+@keyframes ach-wobble { 0%, 85%, 100% { transform: rotate(0); } 90% { transform: rotate(-12deg); } 95% { transform: rotate(10deg); } }
+
+/* Hover / focus: card lifts, medal bounces */
+.ach-card:hover, .ach-card:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 18px var(--panel-shadow), 0 0 0 1px color-mix(in srgb, var(--tc) 50%, transparent);
+  z-index: 2;
+}
+.ach-card:hover .ach-badge, .ach-card:focus-visible .ach-badge { transform: scale(1.12) rotate(-6deg); }
+.ach-card.locked:hover .ach-icon { opacity: 0.6; }
+.ach-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* First render: cards rise in one after another */
+.ach-grid.intro .ach-card {
+  animation: ach-in 0.45s cubic-bezier(.2,.8,.2,1) both;
+  animation-delay: calc(min(var(--i, 0), 24) * 28ms);
+}
+@keyframes ach-in { from { opacity: 0; transform: translateY(10px) scale(0.94); } }
+
+/* Just earned: the card pops and a burst of light rings the medal */
+.ach-card.fresh { animation: ach-pop 0.7s cubic-bezier(.3,1.6,.5,1) both; }
+.ach-card.fresh .ach-badge::after {
+  content: ''; position: absolute; inset: -4px; border-radius: 50%;
+  border: 2px solid var(--tc);
+  animation: ach-ring 1.2s ease-out 0.15s 2 both;
+}
+@keyframes ach-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes ach-ring { from { transform: scale(0.9); opacity: 0.9; } to { transform: scale(1.9); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ach-card, .ach-card *, .ach-card::before, .ach-card::after { animation: none !important; transition: none !important; }
+  .ach-card.unlocked::after { display: none; }
+}
+
 /* Floating description (achTooltip.js) — attached to <body>, so the panel can't clip it */
 .ach-tooltip {
   position: fixed; left: 0; top: 0; z-index: 250;
@@ -562,6 +718,32 @@ body {
 }
 .focus-stats .fs-item { font-size: 12px; color: var(--dim); white-space: nowrap; }
 .focus-stats .fs-item b { color: var(--accent); font-weight: 600; font-size: 14px; margin-left: 3px; font-variant-numeric: tabular-nums; }
+/* Level progress bar (in place of the accuracy percent) */
+.focus-stats .fs-progress { display: inline-flex; align-items: center; gap: 6px; }
+.fs-progress-track {
+  display: inline-block; width: 120px; height: 8px; border-radius: 4px;
+  background: rgba(122,162,247,0.15); overflow: hidden;
+}
+.fs-progress-fill {
+  display: block; height: 100%; width: 0; border-radius: 4px;
+  background: var(--accent); transition: width 0.15s ease-out;
+}
+
+.focus-stats .fs-toggle {
+  font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 8px;
+  border: 1px solid var(--dim); background: transparent; color: var(--dim);
+  cursor: pointer; font-family: inherit; transition: all 0.15s;
+}
+.focus-stats .fs-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ============ HIDDEN TEXT PANEL (focus-stats toggle) ============
+   Collapsed, not display:none — the panel keeps keyboard focus for typing. */
+.app.focus-mode.hide-text .text-display {
+  flex: 0 0 0; height: 0; min-height: 0; padding: 0; margin: 0;
+  border: 0; box-shadow: none; opacity: 0; overflow: hidden;
+}
+.app.focus-mode.hide-text { justify-content: center; }
+.app.focus-mode.hide-text .hands-wrap { cursor: text; }
 
 /* ============ HIDDEN KEYBOARD (sidebar toggle) ============ */
 .app.focus-mode.hide-keyboard .keyboard,
@@ -930,7 +1112,46 @@ html.light-theme[data-skin="lawyer"] :is(.top-frame, .level-map, .ach-panel, .te
 
 /* ============ TYPING BUDDY (animal on the current letter, animal.js) ============ */
 .type-line { position: relative; }
-.type-line.has-buddy { padding-top: 2.45em; }
+.type-line.has-buddy { padding-top: 2.45em; isolation: isolate; }
+/* Scenery behind the buddy (.scenery in index.html): a soft sky and three layers that scroll
+   at different speeds as it walks, like a platformer. animal.js counts the steps in --walk.
+   It stays in the strip above the letters, faint and low-contrast, so nothing competes with the text */
+.type-line .scenery { display: none; }
+.type-line.has-buddy .scenery {
+  display: block; position: absolute; z-index: -1; pointer-events: none; overflow: hidden;
+  left: 0; right: 0; top: 0; bottom: calc(6px + 1.45em);
+  border-radius: 8px 8px 0 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--dim) 35%, transparent);
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 9%, var(--panel-2)), var(--panel-2));
+  --walk: 0; --step-ms: 200ms;
+}
+.scenery > i {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  -webkit-mask-repeat: repeat-x; mask-repeat: repeat-x;
+  transition: -webkit-mask-position var(--step-ms) ease-out, mask-position var(--step-ms) ease-out;
+}
+/* Far hills and clouds: barely move */
+.scenery .sc-far {
+  top: 0.4em; background-color: color-mix(in srgb, var(--dim) 14%, transparent);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 40' preserveAspectRatio='none'%3E%3Cellipse cx='70' cy='7' rx='22' ry='3.5'/%3E%3Cellipse cx='86' cy='5' rx='10' ry='3'/%3E%3Cellipse cx='275' cy='10' rx='18' ry='3'/%3E%3Cellipse cx='288' cy='8' rx='8' ry='2.5'/%3E%3Cpath d='M0 40V24C40 16 70 10 110 18S170 30 210 22 280 6 320 14 380 26 400 24V40Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 40' preserveAspectRatio='none'%3E%3Cellipse cx='70' cy='7' rx='22' ry='3.5'/%3E%3Cellipse cx='86' cy='5' rx='10' ry='3'/%3E%3Cellipse cx='275' cy='10' rx='18' ry='3'/%3E%3Cellipse cx='288' cy='8' rx='8' ry='2.5'/%3E%3Cpath d='M0 40V24C40 16 70 10 110 18S170 30 210 22 280 6 320 14 380 26 400 24V40Z'/%3E%3C/svg%3E");
+  -webkit-mask-size: 400px 100%; mask-size: 400px 100%;
+  -webkit-mask-position: calc(var(--walk) * -0.12ch) 0; mask-position: calc(var(--walk) * -0.12ch) 0;
+}
+/* Near hills with a few pines: a bit faster */
+.scenery .sc-near {
+  top: 0.9em; background-color: color-mix(in srgb, var(--dim) 22%, transparent);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 40' preserveAspectRatio='none'%3E%3Cpath d='M0 40V32C40 28 70 26 110 30S180 36 220 31 270 28 300 32V40Z'/%3E%3Cpath d='M60 29l5-11 5 11Z M68 29l3.5-8 3.5 8Z M200 32l4-9 4 9Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 40' preserveAspectRatio='none'%3E%3Cpath d='M0 40V32C40 28 70 26 110 30S180 36 220 31 270 28 300 32V40Z'/%3E%3Cpath d='M60 29l5-11 5 11Z M68 29l3.5-8 3.5 8Z M200 32l4-9 4 9Z'/%3E%3C/svg%3E");
+  -webkit-mask-size: 300px 100%; mask-size: 300px 100%;
+  -webkit-mask-position: calc(var(--walk) * -0.35ch) 0; mask-position: calc(var(--walk) * -0.35ch) 0;
+}
+/* Grass and pebbles under the feet: move with the letters, one letter per step */
+.scenery .sc-ground {
+  height: 0.3em; background-color: color-mix(in srgb, var(--dim) 40%, transparent);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 10' preserveAspectRatio='none'%3E%3Cpath d='M6 10l1.5-6 1.5 6Z M9 10l1-4 1 4Z M37 10l1.2-4 1.2 4Z M64 10l1.5-7 1.5 7Z M67.5 10l1-4.5 1 4.5Z'/%3E%3Cellipse cx='24' cy='9.4' rx='2.5' ry='1'/%3E%3Cellipse cx='80' cy='9.6' rx='1.6' ry='0.7'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 10' preserveAspectRatio='none'%3E%3Cpath d='M6 10l1.5-6 1.5 6Z M9 10l1-4 1 4Z M37 10l1.2-4 1.2 4Z M64 10l1.5-7 1.5 7Z M67.5 10l1-4.5 1 4.5Z'/%3E%3Cellipse cx='24' cy='9.4' rx='2.5' ry='1'/%3E%3Cellipse cx='80' cy='9.6' rx='1.6' ry='0.7'/%3E%3C/svg%3E");
+  -webkit-mask-size: 9ch 100%; mask-size: 9ch 100%;
+  -webkit-mask-position: calc(var(--walk) * -1ch) 0; mask-position: calc(var(--walk) * -1ch) 0;
+}
+@media (prefers-reduced-motion: reduce) { .scenery > i { transition: none; } }
 /* The animal replaces the highlight: the current letter is just bold and accented */
 .type-line.has-buddy .char.current { background: none; color: var(--cursor); font-weight: 700; border-radius: 0; box-shadow: inset 0 -2px 0 var(--cursor); }
 .buddy {
@@ -1056,6 +1277,34 @@ html.light-theme[data-skin="lawyer"] :is(.top-frame, .level-map, .ach-panel, .te
 .buddy[data-idle="sleepy"] .an-zzz .z2 { animation-delay: 1s; }
 .buddy[data-idle="sleepy"] .an-zzz .z3 { animation-delay: 2s; }
 @keyframes buddyZ { 0% { opacity: 0; transform: translate(0, 2px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(3px, -4px); } }
+/* ---- Per-animal ways of moving (data-kind / data-move set in animal.js) ---- */
+/* Owl: yellow eyes; takes off when you type, flaps faster the faster you go, lands after a pause */
+.buddy-svg.kind-owl .an-sclera { fill: #ffd23f; }
+.buddy .an-fly { transition: transform 0.35s ease-out; }
+.buddy .an-wing { transition: transform 0.25s; }
+.buddy.airborne .an-fly { transform: translateY(-8px); }
+.buddy.airborne .an-wing { animation: buddyFlap 0.24s ease-in-out infinite; }
+.buddy.airborne[data-fear="2"] .an-wing { animation-duration: 0.16s; }
+.buddy.airborne[data-fear="3"] .an-wing { animation-duration: 0.11s; }
+.buddy.airborne .an-leg.a, .buddy.airborne .an-leg.b { animation: none; transform: rotate(45deg); }
+.buddy.airborne .an-leg .an-shin { animation: none; }
+.buddy.airborne .an-head { animation: buddyHeadUp 0.48s ease-in-out infinite; }
+@keyframes buddyFlap { 0%, 100% { transform: rotate(25deg); } 50% { transform: rotate(125deg); } }
+/* A mistake: wings flare up */
+.buddy.oops .an-wing { animation: buddyWingFlare 0.5s ease-out; }
+@keyframes buddyWingFlare { 0%, 100% { transform: rotate(0deg); } 30%, 60% { transform: rotate(115deg); } }
+/* Pigeon: struts with its head jerking forward and back on every step */
+.buddy[data-kind="pigeon"].moving .an-head { animation: buddyPigeonBob 0.24s ease-in-out infinite; }
+.buddy[data-kind="pigeon"].moving[data-gait="run"] .an-head { animation-duration: 0.17s; }
+@keyframes buddyPigeonBob { 0%, 100% { transform: translateX(-1.6px); } 45% { transform: translateX(2.2px); } }
+/* Mantis: its six thin legs scurry fast; the abdomen only sways a little */
+.buddy[data-kind="mantis"].moving .an-leg.a, .buddy[data-kind="mantis"].moving .an-leg.b,
+.buddy[data-kind="mantis"].moving .an-leg .an-shin { animation-duration: 0.12s; }
+.buddy[data-kind="mantis"] .an-tail { animation-name: buddyMantisSway; }
+.buddy[data-kind="mantis"][data-idle="sleepy"] .an-tail { transform: rotate(3deg); }
+@keyframes buddyMantisSway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(3deg); } }
+/* Dog: wags happily even standing still */
+.buddy[data-kind="dog"]:not(.moving):not([data-idle="sleepy"]) .an-tail { animation-duration: 0.55s; }
 @media (prefers-reduced-motion: reduce) {
   .buddy .an-leg, .buddy .an-shin, .buddy .an-head, .buddy .an-tail, .buddy .an-body, .buddy .an-face, .buddy .buddy-svg, .buddy .an-pupil, .buddy .an-lid, .buddy .an-zzz text { animation: none !important; }
   .buddy[data-idle="sleepy"] .an-zzz text { opacity: 1; }
@@ -1392,14 +1641,13 @@ kbd { background: var(--panel); padding: 2px 6px; border-radius: 3px; font-famil
   #sidebar-btn-group button.small { font-size: 9px !important; padding: 3px 5px !important; }
 
   .app.start-mode .ach-panel h2, .app.start-mode .level-map h2 { font-size: 9px; margin-bottom: 4px; }
-  .app.start-mode .ach-panel .ach-grid {
-    flex: 1;
-    grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
-    gap: 3px; overflow-y: auto; align-content: start;
-  }
-  .app.start-mode .ach-panel .ach-cell {
-    height: 24px; font-size: 10px; border-radius: 3px;
-  }
+  /* Phones: compact medals, the name lives in the tooltip */
+  .app.start-mode .ach-panel .ach-grid { grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 4px; }
+  .app.start-mode .ach-card { padding: 5px 3px; gap: 3px; border-radius: 8px; }
+  .app.start-mode .ach-badge { width: 28px; height: 28px; font-size: 14px; }
+  .app.start-mode .ach-name, .app.start-mode .ach-foot span { display: none; }
+  .app.start-mode .ach-card.unlocked .ach-foot { display: none; }
+  .app.start-mode .ach-lock { font-size: 8px; }
 
   .top-frame { padding: 3px 6px; gap: 4px; margin-bottom: 3px; }
   .start-btn { padding: 4px 12px; }
@@ -1431,6 +1679,7 @@ kbd { background: var(--panel); padding: 2px 6px; border-radius: 3px; font-famil
   .focus-stats { gap: 6px; padding: 4px 10px; }
   .focus-stats .fs-item { font-size: 9px; }
   .focus-stats .fs-item b { font-size: 11px; }
+  .fs-progress-track { width: 70px; height: 6px; }
   .completion-card { padding: 20px 16px; }
   .completion-title { font-size: 20px; }
   .cstat-value { font-size: 20px; }
@@ -1514,16 +1763,8 @@ kbd { background: var(--panel); padding: 2px 6px; border-radius: 3px; font-famil
 
   .app.start-mode .ach-panel { padding: 10px; }
   .app.start-mode .ach-panel h2, .app.start-mode .level-map h2 { font-size: 10px; margin-bottom: 5px; }
-  .app.start-mode .ach-panel .ach-grid {
-    flex: 1;
-    grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
-    gap: 3px; overflow-y: auto; align-content: start;
-  }
-  .app.start-mode .ach-panel .ach-cell {
-    font-size: 12px;
-    height: 28px;
-    border-radius: 4px;
-  }
+  .app.start-mode .ach-panel .ach-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
+  .app.start-mode .ach-badge { width: 34px; height: 34px; font-size: 17px; }
 
   .start-btn { padding: 5px 18px; }
   .start-main { font-size: 15px; }
@@ -1625,18 +1866,7 @@ kbd { background: var(--panel); padding: 2px 6px; border-radius: 3px; font-famil
     font-size: 10px;
     margin-bottom: 6px;
   }
-  .app.start-mode .ach-panel .ach-grid {
-    flex: 1;
-    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-    gap: 4px;
-    align-content: start;
-    overflow-y: auto;
-  }
-  .app.start-mode .ach-panel .ach-cell {
-    font-size: 14px;
-    height: 32px;
-    border-radius: 4px;
-  }
+
 
   .app.start-mode .footnote { font-size: 11px; line-height: 1.4; }
 

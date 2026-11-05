@@ -53,7 +53,7 @@ export function hideTooltip() {
 }
 
 /** Wire the tooltip to an achievements grid (call once; cells may be re-rendered). */
-export function attachAchievementTooltips(grid, selector = '.ach-cell') {
+export function attachAchievementTooltips(grid, selector = '.ach-card') {
   grid.addEventListener('mouseover', e => {
     const cell = e.target.closest(selector);
     if (cell) show(cell);

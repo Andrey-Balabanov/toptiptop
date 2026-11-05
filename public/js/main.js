@@ -203,8 +203,8 @@ function currentChar() {
 
 const textView = createTextView(textEl, { before: $('tl-before'), after: $('tl-after') });
 
-/* Animal standing on the current letter of the strip (sidebar: alpaca / sheep / giraffe / off) */
-const buddy = new TypingBuddy($('buddy'), [$('tl-before'), $('tl-after')]);
+/* Animal standing on the current letter of the strip (picked in the auth bar, or off) */
+const buddy = new TypingBuddy($('buddy'), [$('tl-before'), $('tl-after')], $('scenery'));
 function applyAnimal() {
   let kind = 'alpaca';
   try { kind = localStorage.getItem('toptip-animal') || 'alpaca'; } catch {}
@@ -265,11 +265,15 @@ function updateStats() {
 
   // Update focus-mode stats
   const fsWpm = $('fs-wpm');
-  const fsAccuracy = $('fs-accuracy');
+  const fsProgress = $('fs-progress');
+  const fsProgressFill = $('fs-progress-fill');
   const fsTime = $('fs-time');
   const fsErrors = $('fs-errors');
   if (fsWpm) fsWpm.textContent = wpm;
-  if (fsAccuracy) fsAccuracy.textContent = accuracy + '%';
+  // Level progress bar: share of the text already typed
+  const done = state.text.length ? Math.min(100, Math.round((state.pos / state.text.length) * 100)) : 0;
+  if (fsProgressFill) fsProgressFill.style.width = done + '%';
+  if (fsProgress) fsProgress.setAttribute('aria-valuenow', String(done));
   if (fsTime) fsTime.textContent = Math.floor(elapsed) + 's';
   if (fsErrors) fsErrors.textContent = state.totalErrors;
 
@@ -303,6 +307,22 @@ function applyKeyboardVisibility() {
   document.querySelector('.app')?.classList.toggle('hide-keyboard', !show);
 }
 window.addEventListener('keyboard-toggled', applyKeyboardVisibility);
+
+// The big text panel above the type line: hidden unless the player opened it
+function textPanelShown() {
+  try { return localStorage.getItem('toptip-show-text') === 'true'; } catch { return false; }
+}
+function applyTextVisibility() {
+  const show = textPanelShown();
+  document.querySelector('.app')?.classList.toggle('hide-text', !show);
+  const btn = $('btn-text-toggle');
+  if (btn) {
+    // data-i18n lets a later language switch relabel it too
+    btn.dataset.i18n = show ? 'btn.text_hide' : 'btn.text_show';
+    btn.textContent = t(btn.dataset.i18n);
+    btn.setAttribute('aria-expanded', String(show));
+  }
+}
 window.addEventListener('contrast-toggled', (e) => {
   document.documentElement.classList.toggle('high-contrast', e.detail.on);
 });
@@ -587,35 +607,114 @@ function updateHeader() {
 }
 
 let achTooltipsAttached = false;
+let achSeen = null; // ids unlocked at the last render; null before the first one
+
+function fmtCount(n) {
+  n = Math.floor(n);
+  if (n >= 10000) return Math.round(n / 1000) + 'K';
+  return n.toLocaleString(getLanguage());
+}
+
+function achProgressText(a, value) {
+  if (a.goal === 1) return Math.round(Math.min(value, 1) * 100) + '%';
+  return `${fmtCount(Math.min(value, a.goal))} / ${fmtCount(a.goal)}`;
+}
+
+function achDate(stamp) {
+  if (typeof stamp !== 'number' || stamp < 1e12) return '';
+  try {
+    return new Date(stamp).toLocaleDateString(getLanguage(), { day: 'numeric', month: 'short' });
+  } catch { return ''; }
+}
 
 function renderAchievements() {
   const grid = $('ach-grid');
   if (!grid) return;
   if (!achTooltipsAttached) {
-    attachAchievementTooltips(grid);
+    attachAchievementTooltips(grid, '.ach-card');
     achTooltipsAttached = true;
   }
-  grid.innerHTML = '';
-  let unlocked = 0;
-  progress.getAchievements().forEach(a => {
-    const has = !!progress.getProgress().achievements[a.id];
-    if (has) unlocked++;
-    const cell = document.createElement('div');
-    cell.className = 'ach-cell' + (has ? ' unlocked' : '');
-    // Hidden achievements reveal nothing until they are earned
-    const name = !has && a.hidden ? '???' : a.name;
-    const desc = !has && a.hidden ? t('ach.hidden.desc') : a.desc;
-    cell.textContent = has ? a.icon : (a.hidden ? '❔' : '🔒');
-    // Description shown by the floating tooltip (achTooltip.js) on hover, focus or tap
-    cell.dataset.name = name;
-    cell.dataset.desc = desc;
-    cell.dataset.status = t(has ? 'ach.status_unlocked' : 'ach.status_locked');
-    cell.tabIndex = 0;
-    cell.setAttribute('aria-label', `${name}. ${desc}`);
-    grid.appendChild(cell);
+  const earned = progress.getProgress().achievements;
+  const all = progress.getAchievements().map(a => {
+    const has = !!earned[a.id];
+    const value = has ? a.goal : Math.max(0, a.value() || 0);
+    return { a, has, value, share: Math.min(1, value / a.goal) };
   });
+  // Earned first (in their usual order), then the closest to unlocking; secrets last
+  const rank = x => (x.has ? 0 : x.a.hidden ? 2 : 1);
+  const sorted = all
+    .map((x, i) => ({ ...x, i }))
+    .sort((x, y) => rank(x) - rank(y) || (rank(x) === 1 ? y.share - x.share : 0) || x.i - y.i);
+
+  const firstRender = achSeen === null;
+  // Pop only what was earned just now, not everything that arrives with a login
+  const justNow = id => typeof earned[id] === 'number' && Date.now() - earned[id] < 60000;
+  const fresh = new Set(firstRender ? [] : all.filter(x => x.has && !achSeen.has(x.a.id) && justNow(x.a.id)).map(x => x.a.id));
+  achSeen = new Set(all.filter(x => x.has).map(x => x.a.id));
+
+  grid.innerHTML = '';
+  sorted.forEach(({ a, has, value, share }, idx) => {
+    const secret = !has && a.hidden;
+    const card = document.createElement('div');
+    card.className = `ach-card tier-${a.tier || 1}` + (has ? ' unlocked' : ' locked') +
+      (secret ? ' secret' : '') + (fresh.has(a.id) ? ' fresh' : '');
+    card.style.setProperty('--i', idx);
+    card.style.setProperty('--p', share.toFixed(3));
+    // Hidden achievements reveal nothing until they are earned
+    const name = secret ? '???' : a.name;
+    const desc = secret ? t('ach.hidden.desc') : a.desc;
+
+    const badge = document.createElement('div');
+    badge.className = 'ach-badge';
+    const icon = document.createElement('span');
+    icon.className = 'ach-icon';
+    icon.textContent = secret ? '❔' : a.icon;
+    badge.appendChild(icon);
+    if (!has && !secret) {
+      const lock = document.createElement('span');
+      lock.className = 'ach-lock';
+      lock.textContent = '🔒';
+      badge.appendChild(lock);
+    }
+
+    const title = document.createElement('div');
+    title.className = 'ach-name';
+    title.textContent = name;
+
+    const foot = document.createElement('div');
+    foot.className = 'ach-foot';
+    if (has) {
+      foot.textContent = '✓ ' + achDate(earned[a.id]);
+    } else if (!secret) {
+      const bar = document.createElement('div');
+      bar.className = 'ach-bar';
+      bar.appendChild(document.createElement('i'));
+      const num = document.createElement('span');
+      num.textContent = achProgressText(a, value);
+      foot.append(bar, num);
+    }
+
+    card.append(badge, title, foot);
+    // Description shown by the floating tooltip (achTooltip.js) on hover, focus or tap
+    card.dataset.name = name;
+    card.dataset.desc = desc;
+    card.dataset.status = has
+      ? t('ach.status_unlocked')
+      : secret ? t('ach.status_locked') : `${t('ach.status_locked')} · ${achProgressText(a, value)}`;
+    card.tabIndex = 0;
+    card.setAttribute('aria-label', `${name}. ${desc}. ${card.dataset.status}`);
+    grid.appendChild(card);
+  });
+
+  if (firstRender) {
+    grid.classList.add('intro');
+    setTimeout(() => grid.classList.remove('intro'), 1600);
+  }
+  const unlocked = achSeen.size;
   const count = $('ach-count');
-  if (count) count.textContent = `${unlocked} / ${progress.getAchievements().length}`;
+  if (count) count.textContent = `${unlocked} / ${all.length}`;
+  const fill = $('ach-total-fill');
+  if (fill) fill.style.width = (all.length ? (unlocked / all.length) * 100 : 0) + '%';
 }
 
 async function finishSession() {
@@ -725,6 +824,8 @@ function showCourseResult(mode, wpm, accuracy) {
     el.textContent = t('course.failed')
       .replace('{acc}', r.target.accuracy).replace('{wpm}', r.target.wpm);
   }
+  // Fast typing forgives some mistakes: say how much it counted for
+  if (r.bonus > 0) el.textContent += ' ' + t('course.speed_bonus').replace('{n}', r.bonus);
   el.classList.toggle('fail', !r.passed);
   el.classList.remove('hidden');
   // "Next text" continues with the next lesson once it is unlocked
@@ -1239,6 +1340,22 @@ function init() {
   renderDaily();
   initLevelMap({ onStart: startLessonFromMap });
   applyKeyboardVisibility();
+  applyTextVisibility();
+  const textToggle = $('btn-text-toggle');
+  if (textToggle) {
+    // mousedown would move focus off the text: keep typing uninterrupted
+    textToggle.addEventListener('mousedown', e => e.preventDefault());
+    textToggle.addEventListener('click', () => {
+      try { localStorage.setItem('toptip-show-text', String(!textPanelShown())); } catch {}
+      applyTextVisibility();
+      textEl.focus();
+    });
+  }
+  // With the panel hidden, a click on the type line / keyboard starts typing
+  const handsWrap = document.querySelector('.hands-wrap');
+  if (handsWrap) handsWrap.addEventListener('click', e => {
+    if (!e.target.closest('button, select, input')) textEl.focus();
+  });
   if (!hasSeenOnboarding()) showOnboarding({ t, onStartCourse: startCourseFromGuide });
   if (lengthSelect) {
     lengthSelect.addEventListener('change', () => {

@@ -25,9 +25,20 @@ const EN_LESSONS = [
 
 const LESSONS = { ru: RU_LESSONS, en: EN_LESSONS };
 
-/** Targets grow slowly through the course: 95% accuracy always, speed from 12 to 30 WPM. */
+/** Targets grow slowly through the course: 90% accuracy always, speed from 12 to 30 WPM. */
 function lessonTarget(index, total) {
-  return { accuracy: 95, wpm: Math.round(12 + (18 * index) / Math.max(1, total - 1)) };
+  return { accuracy: 90, wpm: Math.round(12 + (18 * index) / Math.max(1, total - 1)) };
+}
+
+/** Speed bonus: every WPM_PER_BONUS_POINT above the speed target forgives 1% of accuracy… */
+export const WPM_PER_BONUS_POINT = 2;
+/** …up to this much, so a fast typist passes from 80% accuracy. */
+export const MAX_SPEED_BONUS = 10;
+
+/** Accuracy points granted for typing faster than the lesson's speed target. */
+export function speedBonus(wpm, targetWpm) {
+  if (!(wpm > targetWpm)) return 0;
+  return Math.min(MAX_SPEED_BONUS, Math.floor((wpm - targetWpm) / WPM_PER_BONUS_POINT));
 }
 
 export function getLessons(language) {
@@ -94,18 +105,21 @@ export function currentLessonIndex(courseProgress, language) {
 
 /**
  * Record a finished lesson attempt.
- * @returns {{ progress: object, passed: boolean, unlocked: boolean, target: {wpm:number, accuracy:number} }}
+ * A good pace earns a speed bonus that is added to the accuracy before it is
+ * compared with the target (see speedBonus).
+ * @returns {{ progress: object, passed: boolean, unlocked: boolean, bonus: number, target: {wpm:number, accuracy:number} }}
  */
 export function recordLessonResult(courseProgress, language, index, wpm, accuracy) {
   const lesson = getLessons(language)[index];
   const target = { wpm: lesson.wpm, accuracy: lesson.accuracy };
-  const passed = accuracy >= target.accuracy && wpm >= target.wpm;
+  const bonus = speedBonus(wpm, target.wpm);
+  const passed = wpm >= target.wpm && accuracy + bonus >= target.accuracy;
   const lang = { passed: 0, best: {}, ...((courseProgress || {})[language] || {}) };
   const prevBest = lang.best[index] || { wpm: 0, accuracy: 0 };
   const best = { ...lang.best, [index]: { wpm: Math.max(prevBest.wpm, wpm), accuracy: Math.max(prevBest.accuracy, accuracy) } };
   const unlocked = passed && index + 1 > lang.passed;
   const next = { ...lang, best, passed: unlocked ? index + 1 : lang.passed };
-  return { progress: { ...(courseProgress || {}), [language]: next }, passed, unlocked, target };
+  return { progress: { ...(courseProgress || {}), [language]: next }, passed, unlocked, bonus, target };
 }
 
 /** Merge two course progress objects (local + server): furthest lesson and best results win. */

@@ -2,7 +2,7 @@
  * Unit tests for the typing buddy's speed → fear / gait rules (animal.js)
  */
 
-import { fearLevel, gaitFor, recentWpm, animalSVG, ANIMALS } from './animal.js';
+import { fearLevel, gaitFor, recentWpm, animalSVG, ANIMALS, MOVES } from './animal.js';
 
 describe('typing buddy', () => {
   it('gets more frightened the faster you type', () => {
@@ -13,6 +13,24 @@ describe('typing buddy', () => {
     expect(gaitFor(10)).toBe('walk');
     expect(gaitFor(40)).toBe('run');
     expect(gaitFor(70)).toBe('jump');
+  });
+
+  it('moves each animal its own way', () => {
+    expect(ANIMALS.every(kind => MOVES[kind])).toBe(true);
+    // the owl always flies
+    expect([0, 40, 90].map(w => gaitFor(w, MOVES.owl))).toEqual(['fly', 'fly', 'fly']);
+    // the pigeon walks, hurries, but never jumps
+    expect([10, 40, 90].map(w => gaitFor(w, MOVES.pigeon))).toEqual(['walk', 'run', 'run']);
+    // the mantis runs even at a slow pace
+    expect([10, 40, 90].map(w => gaitFor(w, MOVES.mantis))).toEqual(['run', 'run', 'jump']);
+    // the cat and the dog walk
+    expect(gaitFor(10, MOVES.cat)).toBe('walk');
+    expect(gaitFor(10, MOVES.dog)).toBe('walk');
+  });
+
+  it('gives the birds wings', () => {
+    expect(animalSVG('owl')).toContain('an-wing');
+    expect(animalSVG('pigeon')).toContain('an-wing');
   });
 
   it('measures speed over the last 3 seconds only', () => {

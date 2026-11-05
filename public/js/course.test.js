@@ -2,12 +2,12 @@
  * Unit tests for course.js (step-by-step lessons)
  */
 
-import { getLessons, keysUpTo, buildLessonText, currentLessonIndex, recordLessonResult, mergeCourse } from './course.js';
+import { getLessons, keysUpTo, buildLessonText, currentLessonIndex, recordLessonResult, mergeCourse, speedBonus } from './course.js';
 
 describe('course', () => {
   it('has lessons with growing speed targets', () => {
     const lessons = getLessons('ru');
-    expect(lessons[0]).toMatchObject({ keys: 'ао', index: 0, accuracy: 95, wpm: 12 });
+    expect(lessons[0]).toMatchObject({ keys: 'ао', index: 0, accuracy: 90, wpm: 12 });
     expect(lessons[lessons.length - 1].wpm).toBe(30);
   });
 
@@ -36,14 +36,30 @@ describe('course', () => {
   });
 
   it('unlocks the next lesson only when both targets are met', () => {
-    const fail = recordLessonResult({}, 'ru', 0, 30, 90);
+    const fail = recordLessonResult({}, 'ru', 0, 13, 88);
     expect(fail).toMatchObject({ passed: false, unlocked: false });
     expect(fail.progress.ru.passed).toBe(0);
     const pass = recordLessonResult(fail.progress, 'ru', 0, 20, 97);
     expect(pass).toMatchObject({ passed: true, unlocked: true });
-    expect(pass.progress.ru).toEqual({ passed: 1, best: { 0: { wpm: 30, accuracy: 97 } } });
+    expect(pass.progress.ru).toEqual({ passed: 1, best: { 0: { wpm: 20, accuracy: 97 } } });
     // replaying an earlier lesson doesn't unlock again
     expect(recordLessonResult(pass.progress, 'ru', 0, 20, 97).unlocked).toBe(false);
+  });
+
+  it('gives fast typists a speed bonus on accuracy, capped at 10%', () => {
+    expect(speedBonus(12, 12)).toBe(0);
+    expect(speedBonus(11, 12)).toBe(0);
+    expect(speedBonus(17, 12)).toBe(2);
+    expect(speedBonus(80, 12)).toBe(10);
+    // 84% at 20 WPM (target 12): +4% bonus → 88% < 90%: not yet
+    expect(recordLessonResult({}, 'ru', 0, 20, 84)).toMatchObject({ passed: false, bonus: 4 });
+    // 84% at 24 WPM: +6% → 90%: passed
+    expect(recordLessonResult({}, 'ru', 0, 24, 84)).toMatchObject({ passed: true, bonus: 6 });
+    // the bonus never lowers the bar below 80%
+    expect(recordLessonResult({}, 'ru', 0, 100, 79).passed).toBe(false);
+    expect(recordLessonResult({}, 'ru', 0, 100, 80).passed).toBe(true);
+    // slow but too slow: speed target still applies
+    expect(recordLessonResult({}, 'ru', 0, 11, 100).passed).toBe(false);
   });
 
   it('merges local and server progress', () => {
