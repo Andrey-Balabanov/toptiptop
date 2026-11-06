@@ -236,10 +236,11 @@ function updateNext() {
   } else if (ch === '\n') {
     hint.innerHTML = `${t('hint.next')} <b>Enter</b> — ${t('hint.right_pinky')}`;
   } else {
-    const f = fingerFor(ch);
+    const shifted = needsShift(ch);
+    const base = shifted ? baseKeyFor(ch) : ch;
+    const f = fingerFor(base);
     let hintText = `${t('hint.next')} <b>${ch}</b> — ${f ? FINGER_NAMES[f] : '—'}`;
-    if (needsShift(ch)) {
-      const base = baseKeyFor(ch);
+    if (shifted) {
       hintText += ' <span style="color:var(--accent)">[⇧ + ' + base + ']</span>';
     }
     hint.innerHTML = hintText;

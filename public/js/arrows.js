@@ -4,7 +4,8 @@
  * to the key that must be pressed next. Each line uses the finger's zone colour
  * (CSS custom property --lp…--rp), flows toward the target with an animated
  * dashed stroke, carries a travelling spark and ends with an arrow head
- * pointing at the target key.
+ * pointing at the target key — the tip stops at the key's edge so the letter
+ * on it stays visible.
  *
  * Layering invariant
  * ------------------
@@ -152,7 +153,37 @@ function getKeyCenter(keyEl, keyboardEl) {
   return {
     x: keyRect.left + keyRect.width / 2 - kbRect.left + keyboardEl.scrollLeft,
     y: keyRect.top + keyRect.height / 2 - kbRect.top + keyboardEl.scrollTop,
+    halfW: keyRect.width / 2,
+    halfH: keyRect.height / 2,
   };
+}
+
+/** Gap (px) left between the arrow tip and the edge of the target key. */
+export const TIP_GAP = 2;
+
+/**
+ * Where the arrow should end so its head points AT the target key without
+ * covering the letter on it: the point where the line from `from` toward the
+ * target centre crosses the target key's border, pulled back by TIP_GAP.
+ * Falls back to the target centre when the keys overlap or coincide (no room
+ * to stop before the border).
+ *
+ * @param {{x:number,y:number}} from - line start (home key centre)
+ * @param {{x:number,y:number,halfW:number,halfH:number}} target
+ * @returns {{x:number,y:number}}
+ */
+export function arrowTipPoint(from, target) {
+  const dx = target.x - from.x;
+  const dy = target.y - from.y;
+  const len = Math.hypot(dx, dy);
+  if (!len || !target.halfW || !target.halfH) return { x: target.x, y: target.y };
+  // Fraction of the vector (target -> from) needed to reach the key border.
+  const s = Math.min(
+    dx ? target.halfW / Math.abs(dx) : Infinity,
+    dy ? target.halfH / Math.abs(dy) : Infinity,
+  ) + TIP_GAP / len;
+  if (s >= 1) return { x: target.x, y: target.y };
+  return { x: target.x - dx * s, y: target.y - dy * s };
 }
 
 /**
@@ -192,8 +223,10 @@ function renderArrow() {
   clearArrowPaths();
 
   const color = resolveFingerColor(fingerId);
-  const { x: x1, y: y1 } = getKeyCenter(homeKeyEl, keyboardEl);
-  const { x: x2, y: y2 } = getKeyCenter(targetKeyEl, keyboardEl);
+  const home = getKeyCenter(homeKeyEl, keyboardEl);
+  const { x: x1, y: y1 } = home;
+  // Stop at the edge of the target key so the head never hides its letter.
+  const { x: x2, y: y2 } = arrowTipPoint(home, getKeyCenter(targetKeyEl, keyboardEl));
 
   const g = document.createElementNS(SVG_NS, 'g');
   g.setAttribute('class', 'movement-arrow');

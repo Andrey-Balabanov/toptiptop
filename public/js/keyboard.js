@@ -5,7 +5,8 @@
 
 import { FINGER_NAMES, fingerFor, fingerMovement, homeKeyForFinger, setFingerLanguage } from './state.js';
 import { t } from './i18n.js';
-import { needsShift, baseKeyFor } from './shift.js';
+import { needsShift, baseKeyFor, setShiftLayout } from './shift.js';
+import { keyboardFrame, boardUnits } from './keyGeometry.js';
 import { initArrowOverlay, destroyArrowOverlay, drawArrow, clearArrow, isReady } from './arrows.js';
 
 const $ = id => document.getElementById(id);
@@ -44,12 +45,13 @@ const KB_LAYOUTS = {
       ['\\','z','x','c','v','b','n','m',',','.','/'],
     ],
   },
+  // macOS «Русская»: ё on the \ key, «/» right of Ю, , and . on Shift+6 / Shift+7
   'mac-ansi': {
     ru: [
       ['1','2','3','4','5','6','7','8','9','0','-','='],
-      ['й','ц','у','к','е','н','г','ш','щ','з','х','ъ'],
+      ['й','ц','у','к','е','н','г','ш','щ','з','х','ъ','ё'],
       ['ф','ы','в','а','п','р','о','л','д','ж','э'],
-      ['я','ч','с','м','и','т','ь','б','ю','.'],
+      ['я','ч','с','м','и','т','ь','б','ю','/'],
     ],
     en: [
       ['1','2','3','4','5','6','7','8','9','0','-','='],
@@ -62,8 +64,8 @@ const KB_LAYOUTS = {
     ru: [
       ['1','2','3','4','5','6','7','8','9','0','-','='],
       ['й','ц','у','к','е','н','г','ш','щ','з','х','ъ'],
-      ['ф','ы','в','а','п','р','о','л','д','ж','э'],
-      ['\\','я','ч','с','м','и','т','ь','б','ю','.'],
+      ['ф','ы','в','а','п','р','о','л','д','ж','э','ё'],
+      ['я','ч','с','м','и','т','ь','б','ю','/'],
     ],
     en: [
       ['1','2','3','4','5','6','7','8','9','0','-','='],
@@ -194,6 +196,68 @@ function setShiftHighlight(show) {
 
 /* ============ KEYBOARD UI ============ */
 
+/** A key from the layout data, with a finger pad when it is a home-row key. */
+function makeCharKey(k, rowIdx, colIdx, lang, extraRows, homeLang) {
+  const el = document.createElement('div');
+  const f = fingerFor(k);
+  el.className = 'key ' + (f || '');
+  el.dataset.key = k;
+
+  // Home-row keys get a finger pad so users see which finger rests where.
+  const home = f ? homeKeyForFinger(f) : null;
+  const isHomeKey = extraRows
+    ? rowIdx === 2 && HOME_COLUMNS.has(colIdx) && !!f
+    : home && home[homeLang] === k;
+
+  if (isHomeKey) {
+    // Keep the letter readable at the bottom of the key, pad above it
+    const cap = document.createElement('span');
+    cap.className = 'key-cap';
+    cap.textContent = k;
+    el.appendChild(cap);
+    el.appendChild(makeFingerMark(f));
+    // Physical keyboard nubs on the left/right index home keys (F/J, А/О)
+    if (f === 'li' || f === 'ri') el.classList.add('finger-bump');
+  } else {
+    el.textContent = k;
+  }
+  return el;
+}
+
+/** Modifier key (Tab, Caps Lock, Shift, Enter, Ctrl, ⌘ …): symbol + word. */
+function makeModKey(spec) {
+  const el = document.createElement('div');
+  el.className = 'key mod mod-' + (spec.name || spec.kind) + (spec.finger ? ' ' + spec.finger : '');
+  if (spec.kind === 'shift') { el.classList.add('shift'); el.dataset.key = 'Shift'; }
+  if (spec.part) el.classList.add('enter-' + spec.part);
+  if (spec.sym) {
+    const s = document.createElement('span'); s.className = 'mod-sym'; s.textContent = spec.sym;
+    el.appendChild(s);
+  }
+  if (spec.word) {
+    const w = document.createElement('span'); w.className = 'mod-word'; w.textContent = spec.word;
+    el.appendChild(w);
+  }
+  return el;
+}
+
+/** MacBook inverted-T arrows: ← [↑ over ↓] →, 3u wide. */
+function makeArrowCluster() {
+  const box = document.createElement('div');
+  box.className = 'kb-arrows';
+  const key = sym => {
+    const k = document.createElement('div');
+    k.className = 'key mod mod-arrow';
+    k.textContent = sym;
+    return k;
+  };
+  const updown = document.createElement('div');
+  updown.className = 'kb-arrows-v';
+  updown.append(key('▲'), key('▼'));
+  box.append(key('◀'), updown, key('▶'));
+  return box;
+}
+
 export function buildKeyboard(lang, currentChar = null) {
   const wrap = $('keyboard');
   if (!wrap) return;
@@ -205,61 +269,52 @@ export function buildKeyboard(lang, currentChar = null) {
 
   const extraRows = EXTRA_LANG_ROWS[lang];
   const layout = rowsFor(lang);
-  setFingerLanguage(lang);
+  setFingerLanguage(lang, keyboardSettings.layout);
+  setShiftLayout(lang, keyboardSettings.layout);
 
   // Which language's home-row keys should show a drawn finger
   const homeLang = (lang === 'en' || lang === 'code') ? 'en' : 'ru';
 
-  // Render all 4 rows: numbers (row 0) + 3 letter rows
-  layout.forEach((row, rowIdx) => {
+  // Lay the rows out like the physical keyboard: modifier keys on the row
+  // edges give every row its real horizontal offset (see keyGeometry.js).
+  const frame = keyboardFrame(keyboardSettings.layout, extraRows ? lang : homeLang, layout);
+  wrap.style.setProperty('--cols', String(boardUnits(keyboardSettings.layout)));
+  const listed = new Set(layout.flat());
+
+  frame.forEach((row, rowIdx) => {
     const r = document.createElement('div'); r.className = 'kb-row';
-    row.forEach((k, colIdx) => {
-      const el = document.createElement('div');
-      const f = fingerFor(k);
-      el.className = 'key ' + (f || '');
-      el.dataset.key = k;
-
-      // Home-row keys get a finger pad so users see which finger rests where.
-      const home = f ? homeKeyForFinger(f) : null;
-      const isHomeKey = extraRows
-        ? rowIdx === 2 && HOME_COLUMNS.has(colIdx) && !!f
-        : home && home[homeLang] === k;
-
-      if (isHomeKey) {
-        // Keep the letter readable at the bottom of the key, pad above it
-        const cap = document.createElement('span');
-        cap.className = 'key-cap';
-        cap.textContent = k;
-        el.appendChild(cap);
-        el.appendChild(makeFingerMark(f));
-        // Physical keyboard nubs on the left/right index home keys (F/J, А/О)
-        if (f === 'li' || f === 'ri') el.classList.add('finger-bump');
+    row.forEach(spec => {
+      let el;
+      if (spec.kind === 'char') {
+        el = makeCharKey(spec.char, rowIdx, spec.col, lang, extraRows, homeLang);
+      } else if (spec.kind === 'deco') {
+        // A real key the layout data doesn't list (ё, `, §, ISO extras): typeable
+        // and finger-coloured when it is a plain character no other key carries.
+        const f = fingerFor(spec.label);
+        el = document.createElement('div');
+        el.className = 'key ' + (f || '');
+        el.textContent = spec.label;
+        if (f && !listed.has(spec.label) && !needsShift(spec.label)) el.dataset.key = spec.label;
+        else el.classList.add('deco');
+      } else if (spec.kind === 'space') {
+        el = document.createElement('div'); el.className = 'key space tt';
+        el.dataset.key = ' ';
+        // The thumb pad — biggest and lowest of all — rests on the space bar
+        const spCap = document.createElement('span');
+        spCap.className = 'key-cap';
+        spCap.textContent = '␣';
+        el.appendChild(spCap);
+        el.appendChild(makeFingerMark('tt'));
+      } else if (spec.kind === 'arrows') {
+        el = makeArrowCluster();
       } else {
-        el.textContent = k;
+        el = makeModKey(spec);
       }
-
+      if (spec.u !== 1) el.style.setProperty('--u', String(spec.u));
       r.appendChild(el);
     });
     wrap.appendChild(r);
   });
-
-  // Bottom row: Shift + Space + Shift
-  const r = document.createElement('div'); r.className = 'kb-row';
-  const shiftL = document.createElement('div');
-  shiftL.className = 'key shift rp'; shiftL.textContent = '⇧'; shiftL.dataset.key = 'Shift';
-  r.appendChild(shiftL);
-  const sp = document.createElement('div'); sp.className = 'key space tt';
-  sp.dataset.key = ' ';
-  // The thumb pad — biggest and lowest of all — rests on the space bar
-  const spCap = document.createElement('span');
-  spCap.className = 'key-cap';
-  spCap.textContent = '␣';
-  sp.appendChild(spCap);
-  sp.appendChild(makeFingerMark('tt'));
-  r.appendChild(sp);
-  const shiftR = shiftL.cloneNode(true);
-  r.appendChild(shiftR);
-  wrap.appendChild(r);
 
   // Initialize SVG arrow overlay on the keyboard container
   initArrowOverlay(wrap);
@@ -341,21 +396,20 @@ export function updateKeyboardArrow(ch, lang) {
 
   if (!keyboardSettings.showArrows || !ch || ch === ' ' || ch === '\n') return;
 
-  const f = fingerFor(ch);
+  // A shifted symbol is typed by the finger of its base key (RU «,» → «.» or «6»)
+  const shiftNeeded = needsShift(ch);
+  const targetKeyChar = (shiftNeeded ? baseKeyFor(ch) : ch) || ch;
+  const f = fingerFor(targetKeyChar);
   if (!f || f === 'tt') return;
 
   // Home-row key — no arrow needed
-  const movement = fingerMovement(ch, lang, rowsFor(lang));
+  const movement = fingerMovement(targetKeyChar, lang, rowsFor(lang));
   if (!movement) return;
   if (movement.rowDiff === 0 && movement.colDiff === 0) return;
 
   // Find home key element and target key element
   const homeKeyChar = getHomeKeyChar(f, lang);
   if (!homeKeyChar) return;
-
-  const shiftNeeded = needsShift(ch);
-  const displayKey = shiftNeeded ? baseKeyFor(ch) : ch;
-  const targetKeyChar = displayKey || ch;
 
   const keyboardEl = document.getElementById('keyboard');
   const homeKeyEl = findKeyEl(homeKeyChar);

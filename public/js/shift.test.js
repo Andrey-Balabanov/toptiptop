@@ -5,7 +5,7 @@
  *   - needsShift(ch)   — whether a character requires the Shift key
  *   - baseKeyFor(ch)   — maps a shifted character to its unshifted base key
  */
-import { needsShift, baseKeyFor } from './shift.js';
+import { needsShift, baseKeyFor, setShiftLayout } from './shift.js';
 
 /* ==========================================================================
  *  needsShift()
@@ -235,5 +235,39 @@ describe('baseKeyFor()', () => {
     test('multi-character string passes through', () => {
       expect(baseKeyFor('Hello')).toBe('Hello');
     });
+  });
+});
+
+describe('setShiftLayout — per-keyboard shifted symbols', () => {
+  afterEach(() => setShiftLayout(null));
+
+  test('Russian PC: comma is Shift + the "." key, ? is Shift+7', () => {
+    setShiftLayout('ru', 'pc-ansi');
+    expect(needsShift(',')).toBe(true);
+    expect(baseKeyFor(',')).toBe('.');
+    expect(needsShift('.')).toBe(false);
+    expect(baseKeyFor('?')).toBe('7');
+    expect(baseKeyFor(';')).toBe('4');
+    expect(baseKeyFor(':')).toBe('6');
+    expect(baseKeyFor('"')).toBe('2');
+  });
+
+  test('Russian Mac: comma Shift+6, full stop Shift+7, ? on the / key', () => {
+    setShiftLayout('ru', 'mac-iso');
+    expect(baseKeyFor(',')).toBe('6');
+    expect(needsShift('.')).toBe(true);
+    expect(baseKeyFor('.')).toBe('7');
+    expect(baseKeyFor(';')).toBe('8');
+    expect(baseKeyFor(':')).toBe('5');
+    expect(baseKeyFor('?')).toBe('/');
+    expect(needsShift('/')).toBe(false);
+  });
+
+  test('English: comma and ; stay unshifted, : and " need Shift', () => {
+    setShiftLayout('en', 'mac-ansi');
+    expect(needsShift(',')).toBe(false);
+    expect(needsShift(';')).toBe(false);
+    expect(baseKeyFor(':')).toBe(';');
+    expect(baseKeyFor('"')).toBe("'");
   });
 });

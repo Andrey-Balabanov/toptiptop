@@ -70,9 +70,13 @@ const LANG_FINGER_OVERRIDES = {
 };
 let fingerOverrides = {};
 
+/** macOS «Русская»: ё sits on the \ key, the top-left key types ] / [. */
+const MAC_RU_FINGER_OVERRIDES = { 'ё':'rp', ']':'lp', '[':'lp' };
+
 /** Use the finger map of `lang` (falls back to the shared ru/en map). */
-function setFingerLanguage(lang) {
-  fingerOverrides = LANG_FINGER_OVERRIDES[lang] || {};
+function setFingerLanguage(lang, layoutId = 'pc-ansi') {
+  fingerOverrides = LANG_FINGER_OVERRIDES[lang]
+    || (lang === 'ru' && String(layoutId).startsWith('mac') ? MAC_RU_FINGER_OVERRIDES : {});
 }
 
 function fingerFor(ch) {

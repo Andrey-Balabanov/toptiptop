@@ -59,6 +59,42 @@ const ALWAYS_NEEDS_SHIFT = new Set([
 ]);
 
 /**
+ * Shifted symbols of each concrete keyboard → the key pressed with Shift.
+ * On the Russian keyboards punctuation moves around: on a PC the comma is
+ * Shift + the "." key right of Ю, on a Mac ("Русская") it is Shift+6 and even
+ * the full stop needs Shift (Shift+7).
+ */
+const SHIFTED_SYMBOLS = {
+  en: {
+    '!':'1','@':'2','#':'3','$':'4','%':'5','^':'6','&':'7','*':'8','(':'9',')':'0',
+    '_':'-','+':'=','{':'[','}':']','|':'\\',':':';','"':"'",'<':',','>':'.','?':'/','~':'`',
+  },
+  'ru-pc': {
+    '!':'1','"':'2','№':'3',';':'4','%':'5',':':'6','?':'7','*':'8','(':'9',')':'0',
+    '_':'-','+':'=',',':'.','/':'\\',
+  },
+  'ru-mac': {
+    '!':'1','"':'2','№':'3','%':'4',':':'5',',':'6','.':'7',';':'8','(':'9',')':'0',
+    '_':'-','+':'=','?':'/',
+  },
+};
+
+/** Symbol map of the keyboard on screen; null = layout-agnostic defaults. */
+let activeSymbols = null;
+
+/**
+ * Tell the Shift helpers which keyboard is on screen.
+ * @param {string} lang - 'ru' | 'en' | 'code' | other (others keep the defaults)
+ * @param {string} [layoutId] - 'pc-ansi' | 'pc-iso' | 'mac-ansi' | 'mac-iso'
+ */
+function setShiftLayout(lang, layoutId = 'pc-ansi') {
+  const mac = String(layoutId).startsWith('mac');
+  if (lang === 'en' || lang === 'code') activeSymbols = SHIFTED_SYMBOLS.en;
+  else if (lang === 'ru') activeSymbols = SHIFTED_SYMBOLS[mac ? 'ru-mac' : 'ru-pc'];
+  else activeSymbols = null;
+}
+
+/**
  * Check if a character requires holding Shift to type it.
  *
  * NOTE: Ё and ё are separate dedicated keys on the Russian keyboard
@@ -88,6 +124,8 @@ function needsShift(ch) {
   if (ch === 'Ё' || ch === 'ё') return false;
   // Uppercase letters need Shift (both Latin and Cyrillic)
   if (ch !== ch.toLowerCase() && /[A-Za-zА-Яа-яЁё]/.test(ch)) return true;
+  // The active keyboard knows exactly which symbols are shifted
+  if (activeSymbols) return Object.prototype.hasOwnProperty.call(activeSymbols, ch);
   // Symbols that always need Shift (regardless of keyboard layout)
   return ALWAYS_NEEDS_SHIFT.has(ch);
 }
@@ -117,8 +155,9 @@ function baseKeyFor(ch) {
   if (!ch || typeof ch !== 'string' || ch.length !== 1) return ch;
   // Uppercase → lowercase for letters (including Ё→ё via toLowerCase)
   if (ch !== ch.toLowerCase() && /[A-Za-zА-Яа-яЁё]/.test(ch)) return ch.toLowerCase();
-  // Look up in symbol map
+  // Look up in symbol map (the active keyboard's, when one is set)
+  if (activeSymbols) return activeSymbols[ch] || ch;
   return SHIFTED_TO_BASE[ch] || ch;
 }
 
-export { SHIFTED_TO_BASE, ALWAYS_NEEDS_SHIFT, needsShift, baseKeyFor };
+export { SHIFTED_TO_BASE, ALWAYS_NEEDS_SHIFT, SHIFTED_SYMBOLS, setShiftLayout, needsShift, baseKeyFor };

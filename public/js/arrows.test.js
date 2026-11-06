@@ -234,6 +234,8 @@ import {
   clearArrow,
   isReady,
   FALLBACK_COLOR,
+  TIP_GAP,
+  arrowTipPoint,
 } from './arrows.js';
 
 /* ===================================================================
@@ -463,8 +465,26 @@ describe('arrows.js — SVG Arrow Overlay', () => {
 
       expect(Number(line.attributes.x1)).toBe(175);
       expect(Number(line.attributes.y1)).toBe(175);
-      expect(Number(line.attributes.x2)).toBe(125);
-      expect(Number(line.attributes.y2)).toBe(105);
+      // The tip stops on the target key's bottom edge (y = 105 + 25 = 130),
+      // pulled back by TIP_GAP along the line toward the centre (125, 105),
+      // so the arrow never covers the letter on the key.
+      const x2 = Number(line.attributes.x2);
+      const y2 = Number(line.attributes.y2);
+      expect(y2).toBeGreaterThan(130);
+      expect(y2).toBeLessThan(130 + TIP_GAP + 0.01);
+      // still on the straight line from the home centre to the target centre
+      expect((x2 - 175) / (y2 - 175)).toBeCloseTo((125 - 175) / (105 - 175), 6);
+    });
+
+    test('arrowTipPoint stops at the key edge facing the home key', () => {
+      // horizontal: target 40px wide, centre 100 → left edge 80, minus gap
+      expect(arrowTipPoint({ x: 0, y: 0 }, { x: 100, y: 0, halfW: 20, halfH: 20 }))
+        .toEqual({ x: 80 - TIP_GAP, y: 0 });
+      // keys overlap / same key → falls back to the target centre
+      expect(arrowTipPoint({ x: 95, y: 0 }, { x: 100, y: 0, halfW: 20, halfH: 20 }))
+        .toEqual({ x: 100, y: 0 });
+      expect(arrowTipPoint({ x: 100, y: 0 }, { x: 100, y: 0, halfW: 20, halfH: 20 }))
+        .toEqual({ x: 100, y: 0 });
     });
 
     test('arrow head polygon has 3 points (triangle)', () => {
@@ -476,10 +496,11 @@ describe('arrows.js — SVG Arrow Overlay', () => {
 
       const points = head.attributes.points.split(' ');
       expect(points.length).toBe(3);
-      // First point should be the target center (relative to the keyboard)
+      // First point is the tip — the same point the line ends at
+      const line = g.children.find(c => c.tagName === 'line');
       const firstPoint = points[0].split(',');
-      expect(Number(firstPoint[0])).toBe(125);
-      expect(Number(firstPoint[1])).toBe(105);
+      expect(Number(firstPoint[0])).toBe(Number(line.attributes.x2));
+      expect(Number(firstPoint[1])).toBe(Number(line.attributes.y2));
     });
 
     test('uses different colors for different fingers', () => {
@@ -526,8 +547,10 @@ describe('arrows.js — SVG Arrow Overlay', () => {
       //   to:   (150 + 25 - 50 + 30, 180 + 25 - 100 + 50) = (155, 155)
       expect(Number(line.attributes.x1)).toBe(205);
       expect(Number(line.attributes.y1)).toBe(225);
-      expect(Number(line.attributes.x2)).toBe(155);
-      expect(Number(line.attributes.y2)).toBe(155);
+      // tip shifted by the same scroll offset (+30, +50) as the start
+      const tip = arrowTipPoint({ x: 175, y: 175 }, { x: 125, y: 105, halfW: 25, halfH: 25 });
+      expect(Number(line.attributes.x2)).toBeCloseTo(tip.x + 30, 6);
+      expect(Number(line.attributes.y2)).toBeCloseTo(tip.y + 50, 6);
     });
 
     test('replaces previous arrow when called again', () => {
